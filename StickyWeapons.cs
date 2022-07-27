@@ -26,7 +26,7 @@ namespace StickyWeapons
         }
         //public delegate void RefAction<T>(ref T value);
 
-        public delegate void RefAction<T>(ref T target, T value);
+        public delegate void RefAction<T1, T2>(ref T1 target, T2 value);
 
         private void Player_ItemCheck_Inner(ILContext il)
         {
@@ -77,24 +77,32 @@ namespace StickyWeapons
             //}
             ILLabel label = cursor.DefineLabel();
             cursor.MarkLabel(label);
+            cursor.Emit(Ldloca, 2);
             cursor.Emit(Ldarg_0);
-            cursor.Emit(Ldfld, typeof(Player).GetField("inventory"));//"inventory"
-            cursor.Emit(Ldarg_0);
-            cursor.Emit(Ldfld, typeof(Player).GetField("selectedItem"));
-            cursor.Emit(Ldelem_Ref);
-            cursor.EmitDelegate<RefAction<Item>>
+            cursor.EmitDelegate<RefAction<Item, Player>>
             (
-                (ref Item target, Item value) =>
+                (ref Item target, Player value) =>
                 {
-                    if (items != null && max > 0 && index > 0)
+                    if (items != null && max > 0 && index > -1)
                     {
+                        //Main.NewText(index);
+                        //Main.NewText(max,Color.Red);
                         target = items[index];
                         index++;
+
+
                     }
-                    else 
+                    else
                     {
-                        target = value;
+                        target = value.HeldItem;
                     }
+                    //target = value.HeldItem;
+
+                    //Main.NewText(items != null);
+                    //Main.NewText(max);
+                    //Main.NewText(index);
+
+
                 }
             );
             cursor.Remove();
