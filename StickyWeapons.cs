@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using MonoMod.Cil;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,12 +12,106 @@ using Terraria.ModLoader;
 using Terraria.ModLoader.Default;
 using Terraria.ModLoader.Exceptions;
 using Terraria.ModLoader.IO;
-
+using Terraria.UI.Chat;
+using Mono.Cecil.Cil;
+using static Mono.Cecil.Cil.OpCodes;
 namespace StickyWeapons
 {
     public class StickyWeapons : Mod
     {
+        public override void Load()
+        {
+            IL.Terraria.Player.ItemCheck_Inner += Player_ItemCheck_Inner;
+            base.Load();
+        }
+        //public delegate void RefAction<T>(ref T value);
+
+        public delegate void RefAction<T>(ref T target, T value);
+
+        private void Player_ItemCheck_Inner(ILContext il)
+        {
+            ILCursor cursor = new ILCursor(il);
+            if (!cursor.TryGotoNext(i => i.MatchStloc(2)))
+            {
+                return;
+            }
+            Item[] items = null;
+            int index = -1;
+            int max = -1;
+            //ILLabel label = null;
+            cursor.EmitDelegate<Action<Item>>
+            (
+                item =>
+                {
+                    if (item.ModItem != null && item.ModItem is StickyItem sticky)
+                    {
+                        items = sticky.ItemSet;
+                        index = 0;
+                        max = items.Length;
+                    }
+                }
+            );
+
+            //if (items != null && max > 0 && index > 0)// && index < max
+            //{
+            //    cursor.MarkLabel(label);
+            //    cursor.Emit(Ldloc_2);
+            //    cursor.EmitDelegate<RefAction<Item>>((ref Item item) => { item = items[index]; index++; });
+
+            //    if (!cursor.TryGotoNext(i => i.MatchRet()))
+            //    {
+            //        return;
+            //    }
+            //    cursor.Emit(Ldc_I4, index);
+            //    cursor.Emit(Ldc_I4, max);
+            //    cursor.Emit(Clt);
+            //    cursor.Emit(Brtrue_S, label);
+            //}
+            //else
+            //{
+            //    cursor.Emit(Ldloc_0);
+            //    cursor.Emit(Ldfld, "inventory");
+            //    cursor.Emit(Ldloc_0);
+            //    cursor.Emit(Ldfld, "selectedItem");
+            //    cursor.Emit(Stloc, 2);
+            //}
+            ILLabel label = cursor.DefineLabel();
+            cursor.MarkLabel(label);
+            cursor.Emit(Ldarg_0);
+            cursor.Emit(Ldfld, typeof(Player).GetField("inventory"));//"inventory"
+            cursor.Emit(Ldarg_0);
+            cursor.Emit(Ldfld, typeof(Player).GetField("selectedItem"));
+            cursor.Emit(Ldelem_Ref);
+            cursor.EmitDelegate<RefAction<Item>>
+            (
+                (ref Item target, Item value) =>
+                {
+                    if (items != null && max > 0 && index > 0)
+                    {
+                        target = items[index];
+                        index++;
+                    }
+                    else 
+                    {
+                        target = value;
+                    }
+                }
+            );
+            cursor.Remove();
+
+
+            if (!cursor.TryGotoNext(i => i.MatchRet()))
+            {
+                return;
+            }
+            cursor.Emit(Ldc_I4, index);
+            cursor.Emit(Ldc_I4, max);
+            cursor.Emit(Clt);
+            cursor.Emit(Brtrue_S, label);
+
+        }
     }
+
     public class Glue : ModItem
     {
         public override void SetStaticDefaults()
@@ -24,12 +119,13 @@ namespace StickyWeapons
             DisplayName.SetDefault("胶水");
             Tooltip.SetDefault("看起来可以把两件道具粘起来...在它把你的手和道具粘起来之前");
         }
+        public bool CanChoose(Item _item) => _item.active && _item.type != 0 && (_item.damage > 0 || _item.type == ModContent.ItemType<StickyItem>()) && _item.useAnimation > 2 && Vector2.DistanceSquared(_item.Center, Item.Center) <= 4096;
         public override void Update(ref float gravity, ref float maxFallSpeed)
         {
             Item item1 = null;
             foreach (var _item in Main.item)
             {
-                if (_item.active && _item.type != 0 && _item.type != 5255 && _item.useAnimation > 2 && Vector2.DistanceSquared(_item.Center, Item.Center) <= 4096)
+                if (CanChoose(_item))
                 {
                     item1 = _item;
                     break;
@@ -38,7 +134,7 @@ namespace StickyWeapons
             if (item1 == null) return;
             foreach (var _item in Main.item)
             {
-                if (_item.active && _item.type != 0 && _item.type != 5255 && _item.GetHashCode() != item1.GetHashCode() && _item.useAnimation > 2 && Vector2.DistanceSquared(_item.Center, Item.Center) <= 4096)
+                if (CanChoose(_item) && _item.GetHashCode() != item1.GetHashCode())
                 {
                     var stickyIndex = Main.item[Item.NewItem(Item.GetSource_Misc("Sticky!"), Item.Center, ModContent.ItemType<StickyItem>())];
                     if (stickyIndex.ModItem != null && stickyIndex.ModItem is StickyItem sticky)
@@ -50,8 +146,8 @@ namespace StickyWeapons
                             Dust.NewDustPerfect(Vector2.Lerp(item1.Center, _item.Center, n / 99f), DustID.Clentaminator_Cyan).noGravity = true;
                             Dust.NewDustPerfect(Item.Center, DustID.Clentaminator_Cyan, (n / 99f * MathHelper.TwoPi).ToRotationVector2()).noGravity = true;
                         }
-                        Main.NewText(item1.Name, Color.Red);
-                        Main.NewText(_item.Name, Color.Cyan);
+                        //Main.NewText(item1.Name, Color.Red);
+                        //Main.NewText(_item.Name, Color.Cyan);
                         //Main.NewText(Item.useAnimation, Color.Green);
                         //Main.NewText("草");
                         item1.TurnToAir();
@@ -64,17 +160,27 @@ namespace StickyWeapons
                         int height = 0;
                         int rare = -114514;
                         int value = 0;
-                        foreach (var i in sticky.ItemSet) 
+                        int useTime = 0;
+                        int useAnimation = 0;
+
+                        foreach (var i in sticky.ItemSet)
                         {
                             width = i.width > width ? i.width : width;
                             height = i.height > height ? i.height : height;
                             rare = i.rare > rare ? i.rare : rare;
+                            useTime = i.useTime > useTime ? i.useTime : useTime;
+                            useAnimation = i.useAnimation > useAnimation ? i.useAnimation : useAnimation;
+
                             value += i.value + 5;
                         }
                         sticky.Item.width = width;
                         sticky.Item.height = height;
                         sticky.Item.rare = rare;
                         sticky.Item.value = value - 5;
+                        sticky.Item.useTime = useTime;
+                        sticky.Item.useAnimation = useAnimation;
+                        sticky.Item.useStyle = 1;
+
                         //Item.TurnToAir();
 
                     }
@@ -166,7 +272,7 @@ namespace StickyWeapons
         public override bool PreDrawInWorld(SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
         {
             if (item1 == null || item2 == null) return false;
-            for (int n = 0; n < ItemSet.Length; n++) 
+            for (int n = 0; n < ItemSet.Length; n++)
             {
                 float _rotation = rotation;
                 float _scale = scale;
@@ -438,11 +544,186 @@ namespace StickyWeapons
                         lines[k].OverrideColor = black;
                     }
 
+                    #region Tooltip绘制
+                    //List<DrawableTooltipLine> drawableLines = lines.Select((TooltipLine x, int i) => new DrawableTooltipLine(x, i, 0, 0, Color.White)).ToList();
+                    //int num12 = 0;
+                    //for (int j = 0; j < numLines; j++)
+                    //{
+                    //    Vector2 stringSize = ChatManager.GetStringSize(FontAssets.MouseText.Value, array[j], Vector2.One);
+                    //    if (stringSize.X > zero.X)
+                    //        zero.X = stringSize.X;
+
+                    //    zero.Y += stringSize.Y + (float)num12;
+                    //}
+
+                    //if (yoyoLogo != -1)
+                    //    zero.Y += 24f;
+
+                    //var X = 6;
+                    //var Y = 6;
+                    //int num13 = 4;
+                    //if (settingsEnabled_OpaqueBoxBehindTooltips)
+                    //{
+                    //    X += 8;
+                    //    Y += 2;
+                    //    num13 = 18;
+                    //}
+
+                    //int num14 = Main.screenWidth;
+                    //int num15 = Main.screenHeight;
+                    //if ((float)X + zero.X + (float)num13 > (float)num14)
+                    //    X = (int)((float)num14 - zero.X - (float)num13);
+
+                    //if ((float)Y + zero.Y + (float)num13 > (float)num15)
+                    //    Y = (int)((float)num15 - zero.Y - (float)num13);
+
+                    //int num16 = 0;
+                    //num3 = (float)(int)Main.mouseTextColor / 255f;
+                    //if (settingsEnabled_OpaqueBoxBehindTooltips)
+                    //{
+                    //    num3 = MathHelper.Lerp(num3, 1f, 1f);
+                    //    int num17 = 14;
+                    //    int num18 = 9;
+                    //    Utils.DrawInvBG(Main.spriteBatch, new Microsoft.Xna.Framework.Rectangle(X - num17, Y - num18, (int)zero.X + num17 * 2, (int)zero.Y + num18 + num18 / 2), new Microsoft.Xna.Framework.Color(23, 25, 81, 255) * 0.925f);
+                    //}
+
+                    //bool globalCanDraw = ItemLoader.PreDrawTooltip(_item, lines.AsReadOnly(), ref X, ref Y);
+                    //for (int k = 0; k < numLines; k++)
+                    //{
+                    //    drawableLines[k].OriginalX = X;
+                    //    drawableLines[k].OriginalY = Y + num16;
+                    //    if (drawableLines[k].Mod == "Terraria" && drawableLines[k].Name == "OneDropLogo")
+                    //    {
+                    //        int num20 = (int)((float)(int)mouseTextColor * 1f);
+                    //        Color color2 = Color.Black;
+                    //        drawableLines[k].Color = new Color(num20, num20, num20, num20);
+                    //        if (!ItemLoader.PreDrawTooltipLine(HoverItem, drawableLines[k], ref num12) || !globalCanDraw)
+                    //            goto PostDraw;
+
+                    //        for (int l = 0; l < 5; l++)
+                    //        {
+                    //            int num21 = drawableLines[k].X;
+                    //            int num22 = drawableLines[k].Y;
+                    //            if (l == 4)
+                    //                color2 = new Microsoft.Xna.Framework.Color(num20, num20, num20, num20);
+
+                    //            switch (l)
+                    //            {
+                    //                case 0:
+                    //                    num21--;
+                    //                    break;
+                    //                case 1:
+                    //                    num21++;
+                    //                    break;
+                    //                case 2:
+                    //                    num22--;
+                    //                    break;
+                    //                case 3:
+                    //                    num22++;
+                    //                    break;
+                    //            }
+                    //            Color drawColor2 = drawableLines[k].OverrideColor ?? drawableLines[k].Color;
+                    //            Main.spriteBatch.Draw(TextureAssets.OneDropLogo.Value, new Vector2(num21, num22), null, (l != 4) ? color2 : drawColor2, drawableLines[k].Rotation, drawableLines[k].Origin, (drawableLines[k].BaseScale.X + drawableLines[k].BaseScale.Y) / 2f, SpriteEffects.None, 0f);
+                    //        }
+                    //    }
+                    //    else
+                    //    {
+                    //        Microsoft.Xna.Framework.Color black = Microsoft.Xna.Framework.Color.Black;
+                    //        black = new Microsoft.Xna.Framework.Color(num4, num4, num4, num4);
+                    //        if (drawableLines[k].Mod == "Terraria" && drawableLines[k].Name == "ItemName")
+                    //        {
+                    //            if (rare == -11)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(255f * num4), (byte)(175f * num4), (byte)(0f * num4), a);
+
+                    //            if (rare == -1)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(130f * num4), (byte)(130f * num4), (byte)(130f * num4), a);
+
+                    //            if (rare == 1)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(150f * num4), (byte)(150f * num4), (byte)(255f * num4), a);
+
+                    //            if (rare == 2)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(150f * num4), (byte)(255f * num4), (byte)(150f * num4), a);
+
+                    //            if (rare == 3)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(255f * num4), (byte)(200f * num4), (byte)(150f * num4), a);
+
+                    //            if (rare == 4)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(255f * num4), (byte)(150f * num4), (byte)(150f * num4), a);
+
+                    //            if (rare == 5)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(255f * num4), (byte)(150f * num4), (byte)(255f * num4), a);
+
+                    //            if (rare == 6)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(210f * num4), (byte)(160f * num4), (byte)(255f * num4), a);
+
+                    //            if (rare == 7)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(150f * num4), (byte)(255f * num4), (byte)(10f * num4), a);
+
+                    //            if (rare == 8)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(255f * num4), (byte)(255f * num4), (byte)(10f * num4), a);
+
+                    //            if (rare == 9)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(5f * num4), (byte)(200f * num4), (byte)(255f * num4), a);
+
+                    //            if (rare == 10)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(255f * num4), (byte)(40f * num4), (byte)(100f * num4), a);
+
+                    //            if (rare == 11)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(180f * num4), (byte)(40f * num4), (byte)(255f * num4), a);
+
+                    //            if (rare > 11)
+                    //                black = GetRarity(rare).RarityColor * num4;
+
+
+                    //            if (_item.expert || rare == -12)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)((float)Main.DiscoR * num4), (byte)((float)Main.DiscoG * num4), (byte)((float)Main.DiscoB * num4), a);
+
+                    //            if (_item.master || rare == -13)
+                    //                black = new Microsoft.Xna.Framework.Color((byte)(255f * num4), (byte)(Main.masterColor * 200f * num4), 0, a);
+                    //        }
+                    //        else if (array2[k])
+                    //        {
+                    //            black = (array3[k] ? new Microsoft.Xna.Framework.Color((byte)(190f * num4), (byte)(120f * num4), (byte)(120f * num4), a) : new Microsoft.Xna.Framework.Color((byte)(120f * num4), (byte)(190f * num4), (byte)(120f * num4), a));
+                    //        }
+                    //        else if (drawableLines[k].Mod == "Terraria" && drawableLines[k].Name == "Price")
+                    //        {
+                    //            black = color;
+                    //        }
+
+                    //        if (drawableLines[k].Mod == "Terraria" && drawableLines[k].Name == "JourneyResearch")
+                    //            black = Colors.JourneyMode;
+
+                    //        drawableLines[k].Color = black;
+                    //        Color realLineColor = black;
+
+                    //        if (overrideColor[k].HasValue)
+                    //        {
+                    //            realLineColor = overrideColor[k].Value * num4;
+                    //            drawableLines[k].OverrideColor = realLineColor;
+                    //        }
+
+                    //        if (!ItemLoader.PreDrawTooltipLine(_item, drawableLines[k], ref num12) || !globalCanDraw)
+                    //            goto PostDraw;
+
+                    //        ChatManager.DrawColorCodedStringWithShadow(Main.spriteBatch, drawableLines[k].Font, drawableLines[k].Text, new Vector2(drawableLines[k].X, drawableLines[k].Y), realLineColor, drawableLines[k].Rotation, drawableLines[k].Origin, drawableLines[k].BaseScale, drawableLines[k].MaxWidth, drawableLines[k].Spread);
+                    //    }
+
+                    //PostDraw:
+                    //    ItemLoader.PostDrawTooltipLine(_item, drawableLines[k]);
+
+                    //    num16 += (int)(FontAssets.MouseText.Value.MeasureString(drawableLines[k].Text).Y + (float)num12);
+                    //}
+
+                    //ItemLoader.PostDrawTooltip(_item, drawableLines.AsReadOnly());
+                    #endregion
 
 
                     tooltips.AddRange(lines);
+
+
                     #endregion
                 }
+
             }
             catch { }
         }
@@ -660,11 +941,6 @@ namespace StickyWeapons
         {
             var rarities = (List<ModRarity>)typeof(RarityLoader).GetField("rarities", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
             return type >= ItemRarityID.Count && type < RarityLoader.RarityCount ? rarities[type - ItemRarityID.Count] : null;
-        }
-        public override void UpdateInventory(Player player)
-        {
-            //if (theItems.Item1 == null || theItems.Item2 == null) Item.TurnToAir();
-            base.UpdateInventory(player);
         }
     }
 }
