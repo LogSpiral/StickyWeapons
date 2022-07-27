@@ -57,7 +57,6 @@ namespace StickyWeapons
                     }
                 }
             );
-
             //if (items != null && max > 0 && index > 0)// && index < max
             //{
             //    cursor.MarkLabel(label);
@@ -84,70 +83,73 @@ namespace StickyWeapons
             #region 原本打算直接换掉HeldItem多循环几次，但是跑不了(x
 
 
-            //ILLabel label = cursor.DefineLabel();
-            //cursor.MarkLabel(label);
-            //cursor.Emit(Ldloca, 2);
-            //cursor.Emit(Ldarg_0);
-            //cursor.EmitDelegate<RefAction<Item, Player>>
-            //(
-            //    (ref Item target, Player value) =>
-            //    {
-            //        if (items != null && max > 0 && index > -1)
-            //        {
-            //            //Main.NewText(index);
-            //            //Main.NewText(max,Color.Red);
-            //            target = items[index];
-            //            index++;
-            //            //Main.NewText(index);
-
-            //        }
-            //        else
-            //        {
-            //            target = value.HeldItem;
-            //        }
-            //        //target = value.HeldItem;
-
-            //        //Main.NewText(items != null);
-            //        Main.NewText(items != null, Color.Red);
-            //        Main.NewText(Main.GameUpdateCount, Color.LightGreen);
-            //        //Main.NewText(max, Color.Green);
-            //        //Main.NewText(index, Color.Blue);
-            //        Main.NewText(target.Name, Color.Cyan);
-
-
-            //    }
-            //);
-            //cursor.Remove();
-
-
-            //if (!cursor.TryGotoNext(i => i.MatchRet()))
-            //{
-            //    return;
-            //}
-            ////cursor.Emit(Ldc_I4, index);
-            //cursor.EmitDelegate(() => index < max);
-            //cursor.Emit(Brtrue_S, label);
-            #endregion
-            //GetOne();
-            if (!cursor.TryGotoNext(i => i.MatchCall<Player>("ItemCheck_Shoot"))) return;//"Terraria.Player",
-            cursor.Index--;
             ILLabel label = cursor.DefineLabel();
             cursor.MarkLabel(label);
-            cursor.EmitDelegate<Func<Item, Item>>
+            cursor.Emit(Ldloca, 2);
+            cursor.Emit(Ldarg_0);
+            cursor.EmitDelegate<RefAction<Item, Player>>
             (
-                item =>
+                (ref Item target, Player value) =>
                 {
                     if (items != null && max > 0 && index > -1)
                     {
+                        //Main.NewText(index);
+                        //Main.NewText(max,Color.Red);
+                        target = items[index];
                         index++;
-                        return items[index - 1];
+                        //Main.NewText(index);
+
                     }
-                    return item;
+                    else
+                    {
+                        target = value.HeldItem;
+                    }
+                    //target = value.HeldItem;
+
+                    //Main.NewText(items != null);
+                    Main.NewText(items != null, Color.Red);
+                    Main.NewText(Main.GameUpdateCount, Color.LightGreen);
+                    //Main.NewText(max, Color.Green);
+                    //Main.NewText(index, Color.Blue);
+                    Main.NewText(target.Name, Color.Cyan);
+
+
                 }
             );
-            cursor.Index += 2;
-            cursor.EmitDelegate(() => index < max);
+            cursor.Remove();
+
+
+            if (!cursor.TryGotoNext(i => i.MatchRet()))
+            {
+                return;
+            }
+            //cursor.Emit(Ldc_I4, index);
+            cursor.EmitDelegate(() => items != null && index < max);
             cursor.Emit(Brtrue_S, label);
+            #endregion
+            //GetOne();
+            #region 尝试多次shoot
+            //if (!cursor.TryGotoNext(i => i.MatchCall<Player>("ItemCheck_Shoot"))) return;//"Terraria.Player",
+            //cursor.Index--;
+            //ILLabel label = cursor.DefineLabel();
+            //cursor.MarkLabel(label);
+            //cursor.EmitDelegate<Func<Item, Item>>
+            //(
+            //    item =>
+            //    {
+            //        if (items != null && max > 0 && index > -1)
+            //        {
+            //            index++;
+            //            return items[index - 1];
+            //        }
+            //        return item;
+            //    }
+            //);
+            //cursor.Index += 2;
+            //cursor.EmitDelegate(() => index < max);
+            //cursor.Emit(Brtrue_S, label);
+            #endregion
+
         }
         //static int GetOne() => 1;
     }
@@ -287,6 +289,7 @@ namespace StickyWeapons
             }
             return this;
         }
+        public override bool AltFunctionUse(Player player) => true;
         public override bool PreDrawInInventory(SpriteBatch spriteBatch, Vector2 position, Rectangle frame, Color drawColor, Color itemColor, Vector2 origin, float scale)
         {
             if (item1 == null || item2 == null) return false;
