@@ -49,6 +49,12 @@ namespace StickyWeapons
                         index = 0;
                         max = items.Length;
                     }
+                    else
+                    {
+                        items = null;
+                        index = -1;
+                        max = -1;
+                    }
                 }
             );
 
@@ -75,49 +81,75 @@ namespace StickyWeapons
             //    cursor.Emit(Ldfld, "selectedItem");
             //    cursor.Emit(Stloc, 2);
             //}
+            #region 原本打算直接换掉HeldItem多循环几次，但是跑不了(x
+
+
+            //ILLabel label = cursor.DefineLabel();
+            //cursor.MarkLabel(label);
+            //cursor.Emit(Ldloca, 2);
+            //cursor.Emit(Ldarg_0);
+            //cursor.EmitDelegate<RefAction<Item, Player>>
+            //(
+            //    (ref Item target, Player value) =>
+            //    {
+            //        if (items != null && max > 0 && index > -1)
+            //        {
+            //            //Main.NewText(index);
+            //            //Main.NewText(max,Color.Red);
+            //            target = items[index];
+            //            index++;
+            //            //Main.NewText(index);
+
+            //        }
+            //        else
+            //        {
+            //            target = value.HeldItem;
+            //        }
+            //        //target = value.HeldItem;
+
+            //        //Main.NewText(items != null);
+            //        Main.NewText(items != null, Color.Red);
+            //        Main.NewText(Main.GameUpdateCount, Color.LightGreen);
+            //        //Main.NewText(max, Color.Green);
+            //        //Main.NewText(index, Color.Blue);
+            //        Main.NewText(target.Name, Color.Cyan);
+
+
+            //    }
+            //);
+            //cursor.Remove();
+
+
+            //if (!cursor.TryGotoNext(i => i.MatchRet()))
+            //{
+            //    return;
+            //}
+            ////cursor.Emit(Ldc_I4, index);
+            //cursor.EmitDelegate(() => index < max);
+            //cursor.Emit(Brtrue_S, label);
+            #endregion
+            //GetOne();
+            if (!cursor.TryGotoNext(i => i.MatchCall<Player>("ItemCheck_Shoot"))) return;//"Terraria.Player",
+            cursor.Index--;
             ILLabel label = cursor.DefineLabel();
             cursor.MarkLabel(label);
-            cursor.Emit(Ldloca, 2);
-            cursor.Emit(Ldarg_0);
-            cursor.EmitDelegate<RefAction<Item, Player>>
+            cursor.EmitDelegate<Func<Item, Item>>
             (
-                (ref Item target, Player value) =>
+                item =>
                 {
                     if (items != null && max > 0 && index > -1)
                     {
-                        //Main.NewText(index);
-                        //Main.NewText(max,Color.Red);
-                        target = items[index];
                         index++;
-
-
+                        return items[index - 1];
                     }
-                    else
-                    {
-                        target = value.HeldItem;
-                    }
-                    //target = value.HeldItem;
-
-                    //Main.NewText(items != null);
-                    //Main.NewText(max);
-                    //Main.NewText(index);
-
-
+                    return item;
                 }
             );
-            cursor.Remove();
-
-
-            if (!cursor.TryGotoNext(i => i.MatchRet()))
-            {
-                return;
-            }
-            cursor.Emit(Ldc_I4, index);
-            cursor.Emit(Ldc_I4, max);
-            cursor.Emit(Clt);
+            cursor.Index += 2;
+            cursor.EmitDelegate(() => index < max);
             cursor.Emit(Brtrue_S, label);
-
         }
+        //static int GetOne() => 1;
     }
 
     public class Glue : ModItem
@@ -258,7 +290,6 @@ namespace StickyWeapons
         public override bool PreDrawInInventory(SpriteBatch spriteBatch, Vector2 position, Rectangle frame, Color drawColor, Color itemColor, Vector2 origin, float scale)
         {
             if (item1 == null || item2 == null) return false;
-
             //return false;
             position += new Vector2(4);
             if (item1.ModItem == null || item1.ModItem.PreDrawInInventory(spriteBatch, position, frame, drawColor, itemColor, origin, scale))
@@ -950,5 +981,10 @@ namespace StickyWeapons
             var rarities = (List<ModRarity>)typeof(RarityLoader).GetField("rarities", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
             return type >= ItemRarityID.Count && type < RarityLoader.RarityCount ? rarities[type - ItemRarityID.Count] : null;
         }
+        public override void SetStaticDefaults()
+        {
+            DisplayName.SetDefault("黏在一起的武器！");
+        }
     }
+
 }
