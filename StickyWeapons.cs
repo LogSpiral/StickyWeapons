@@ -38,7 +38,10 @@ namespace StickyWeapons
             Item[] items = null;
             int index = -1;
             int max = -1;
-            //ILLabel label = null;
+            //bool canShoot = false;
+            ////ILLabel label = null;
+
+            //cursor.Emit()
             cursor.EmitDelegate<Action<Item>>
             (
                 item =>
@@ -48,6 +51,7 @@ namespace StickyWeapons
                         items = sticky.ItemSet;
                         index = 0;
                         max = items.Length;
+                        //canShoot = 
                     }
                     else
                     {
@@ -80,7 +84,7 @@ namespace StickyWeapons
             //    cursor.Emit(Ldfld, "selectedItem");
             //    cursor.Emit(Stloc, 2);
             //}
-            #region 原本打算直接换掉HeldItem多循环几次，但是跑不了(x
+            #region 原本打算直接换掉HeldItem多循环几次，但是跑不了(x  （现在能跑，但是弹幕发射等还是有问题
 
 
             ILLabel label = cursor.DefineLabel();
@@ -106,29 +110,36 @@ namespace StickyWeapons
                     }
                     //target = value.HeldItem;
 
-                    //Main.NewText(items != null);
-                    Main.NewText(items != null, Color.Red);
-                    Main.NewText(Main.GameUpdateCount, Color.LightGreen);
-                    //Main.NewText(max, Color.Green);
-                    //Main.NewText(index, Color.Blue);
-                    Main.NewText(target.Name, Color.Cyan);
+                    ////Main.NewText(items != null);
+                    //Main.NewText(items != null, Color.Red);
+                    //Main.NewText(Main.GameUpdateCount, Color.LightGreen);
+                    ////Main.NewText(max, Color.Green);
+                    ////Main.NewText(index, Color.Blue);
+                    //Main.NewText(target.Name, Color.Cyan);
 
 
                 }
             );
-
-
+            cursor.Remove();
+            #region shoot检测
+            if (!cursor.TryGotoNext(i => i.MatchCall<Player>("ItemCheck_Shoot"))) return;
+            cursor.Index--;
+            cursor.EmitDelegate<Action<Item>>(Item => Main.NewText(Item.Name));
+            cursor.Emit(Ldloc_2);
+            #endregion
             if (!cursor.TryGotoNext(i => i.MatchRet()))
             {
                 return;
             }
-            //var str = cursor.DefineLabel().ToString();
-            //cursor.Next = Instruction.Create(Ldc_I4_0);
+            //cursor.Next = Instruction.Create(Nop);
             //cursor.EmitDelegate<Action<int>>(num => { });
             //cursor.Emit(Ldc_I4, index);
             //cursor.Index -= 4;
-            cursor.EmitDelegate(() => { Main.NewText((items == null, index, max), Main.DiscoColor); return items != null && index < max; });//, str
+            cursor.Index -= 5;
+            //cursor.Emit(Ldarg_0);
+            cursor.EmitDelegate<Func<Player, bool>>(player => {if (player.itemAnimation == 0) player.JustDroppedAnItem = false; return items != null && index < max; });// Main.NewText((items == null, index, max), Main.DiscoColor); 
             cursor.Emit(Brtrue_S, label);
+            cursor.Emit(Ldarg_0);
             //cursor.Emit(Ret);
             #endregion
             //GetOne();
