@@ -116,16 +116,20 @@ namespace StickyWeapons
 
                 }
             );
-            cursor.Remove();
 
 
             if (!cursor.TryGotoNext(i => i.MatchRet()))
             {
                 return;
             }
+            //var str = cursor.DefineLabel().ToString();
+            //cursor.Next = Instruction.Create(Ldc_I4_0);
+            //cursor.EmitDelegate<Action<int>>(num => { });
             //cursor.Emit(Ldc_I4, index);
-            cursor.EmitDelegate(() => items != null && index < max);
+            //cursor.Index -= 4;
+            cursor.EmitDelegate(() => { Main.NewText((items == null, index, max), Main.DiscoColor); return items != null && index < max; });//, str
             cursor.Emit(Brtrue_S, label);
+            //cursor.Emit(Ret);
             #endregion
             //GetOne();
             #region 尝试多次shoot
