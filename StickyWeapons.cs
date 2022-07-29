@@ -17,12 +17,12 @@ using Mono.Cecil.Cil;
 using static Mono.Cecil.Cil.OpCodes;
 namespace StickyWeapons
 {
-    //public class StickyPlayer : ModPlayer 
-    //{
-    //    public Item[] items = null;
-    //    public int index = -1;
-    //    public int max = -1;
-    //}
+    public class StickyPlayer : ModPlayer
+    {
+        public Item[] items = null;
+        public int index = -1;
+        public int max = -1;
+    }
     public class StickyWeapons : Mod
     {
         public override void Load()
@@ -35,7 +35,18 @@ namespace StickyWeapons
         private void Player_ApplyItemTime(ILContext il)
         {
             ILCursor cursor = new ILCursor(il);
-
+            if (!cursor.TryGotoNext(i => i.MatchRet())) return;
+            ILLabel label = cursor.DefineLabel();
+            cursor.MarkLabel(label);
+            if (!cursor.TryGotoPrev(i => i.MatchLdarg(3))) return;
+            cursor.Emit(Ldarg_0);
+            cursor.Emit(Ldarg_1);
+            cursor.EmitDelegate<Func<Player, Item, bool>>((player, item) => { var stickyPlr = player.GetModPlayer<StickyPlayer>(); if (stickyPlr.items == null || stickyPlr.index == stickyPlr.max) {  return false; } return true; });//!(stickyPlr.items == null || stickyPlr.index == stickyPlr.max)//Main.NewText(item.Name, Color.Chocolate);
+            cursor.Emit(Brtrue_S, label);
+            //if (!cursor.TryGotoNext(i => i.MatchLdfld<Item>("useTime"))) return;
+            //cursor.Index++;
+            //cursor.Emit(Ldarg_0);
+            //cursor.EmitDelegate<Func<int, Player, int>>((num, player) => player.GetModPlayer<StickyPlayer>().items == null ? num : player.HeldItem.useTime);
         }
 
         //public delegate void RefAction<T>(ref T value);
@@ -49,9 +60,9 @@ namespace StickyWeapons
             {
                 return;
             }
-            Item[] items = null;
-            int index = -1;
-            int max = -1;
+            //Item[] items = null;
+            //int index = -1;
+            //int max = -1;
             //bool canShoot = false;
             ////ILLabel label = null;
 
@@ -60,19 +71,19 @@ namespace StickyWeapons
             (
                 (item, player) =>
                 {
+                    var stickyPlr = player.GetModPlayer<StickyPlayer>();
                     if (item.ModItem != null && item.ModItem is StickyItem sticky)
                     {
-
-                        items = sticky.ItemSet;
-                        index = 0;
-                        max = items.Length;
+                        stickyPlr.items = sticky.ItemSet;
+                        stickyPlr.index = 0;
+                        stickyPlr.max = stickyPlr.items.Length;
                         //canShoot =player.itemAnimation == 
                     }
                     else
                     {
-                        items = null;
-                        index = -1;
-                        max = -1;
+                        stickyPlr.items = null;
+                        stickyPlr.index = -1;
+                        stickyPlr.max = -1;
                     }
                 }
             );
@@ -110,12 +121,14 @@ namespace StickyWeapons
             (
                 (ref Item target, Player value) =>
                 {
-                    if (items != null && max > 0 && index > -1)
+                    var stickyPlr = value.GetModPlayer<StickyPlayer>();
+
+                    if (stickyPlr.items != null && stickyPlr.max > 0 && stickyPlr.index > -1)
                     {
                         //Main.NewText(index);
                         //Main.NewText(max,Color.Red);
-                        target = items[index];
-                        index++;
+                        target = stickyPlr.items[stickyPlr.index];
+                        stickyPlr.index++;
                         //Main.NewText(index);
 
                     }
@@ -137,11 +150,20 @@ namespace StickyWeapons
             );
             cursor.Remove();
 
-            #region 在正确的时候减少
+            #region animation正确减少
             for (int n = 0; n < 2; n++)
-                if (!cursor.TryGotoNext(i => i.MatchStfld<Player>("itemTime"))) { value++; return; }
+                if (!cursor.TryGotoNext(i => i.MatchStfld<Player>("itemAnimation"))) { value++; return; }
             cursor.Index--;
-            cursor.EmitDelegate<Func<int, int>>(num => items == null || index == max ? 1 : 0);
+            cursor.Emit(Ldarg_0);
+            cursor.EmitDelegate<Func<int, Player, int>>((num, player) => { var stickyPlr = player.GetModPlayer<StickyPlayer>(); return stickyPlr.items == null || stickyPlr.index == stickyPlr.max ? 1 : 0; });
+            #endregion
+
+            #region 在正确的时候减少
+            //for (int n = 0; n < 2; n++)
+            if (!cursor.TryGotoNext(i => i.MatchStfld<Player>("itemTime"))) { value++; return; }
+            cursor.Index--;
+            cursor.Emit(Ldarg_0);
+            cursor.EmitDelegate<Func<int, Player, int>>((num, player) => { var stickyPlr = player.GetModPlayer<StickyPlayer>(); return stickyPlr.items == null || stickyPlr.index == stickyPlr.max ? 1 : 0; });
             #endregion
 
             #region shoot检测
@@ -159,16 +181,16 @@ namespace StickyWeapons
             //cursor.Emit<Player>(OpCodes.Call, "get_ItemTimeIsZero");
             ////cursor.Emit(Mono.Cecil.Cil.OpCodes.Call,)
 
-            if (!cursor.TryGotoNext(i => i.MatchCall<Player>("ItemCheck_Shoot"))) return;
-            cursor.Index -= 19;
-            cursor.Emit(Ldloc_2);
-            cursor.Emit(Ldarg_0);
-            cursor.EmitDelegate<Action<Item, Player>>((item, player) => Main.NewText((item.shoot, item.Name, player.itemAnimation, player.itemTime, item.shoot > 0 && player.itemAnimation > 0 && player.ItemTimeIsZero), Color.Cyan));
+            //if (!cursor.TryGotoNext(i => i.MatchCall<Player>("ItemCheck_Shoot"))) return;
+            //cursor.Index -= 19;
+            //cursor.Emit(Ldloc_2);
+            //cursor.Emit(Ldarg_0);
+            //cursor.EmitDelegate<Action<Item, Player>>((item, player) => Main.NewText((item.shoot, item.Name, player.itemAnimation, player.itemTime, item.shoot > 0 && player.itemAnimation > 0 && player.ItemTimeIsZero), Color.Cyan));
 
-            if (!cursor.TryGotoNext(i => i.MatchCall<Player>("ItemCheck_Shoot"))) return;
-            cursor.Index--;
-            cursor.EmitDelegate<Action<Item>>(item => Main.NewText(item.Name));
-            cursor.Emit(Ldloc_2);
+            //if (!cursor.TryGotoNext(i => i.MatchCall<Player>("ItemCheck_Shoot"))) return;
+            //cursor.Index--;
+            //cursor.EmitDelegate<Action<Item>>(item => Main.NewText(item.Name));
+            //cursor.Emit(Ldloc_2);
 
             //if (!cursor.TryGotoNext(i => i.MatchCall<Player>("ApplyItemTime"))) { value++; return; }
             //cursor.EmitDelegate<Action<Player, Item, float, bool?>>((player, item, num, flag) => { if (items == null || index == max) { player.ApplyItemTime(item, num, flag); Main.NewText(item.Name,Color.Red); } });
@@ -201,7 +223,7 @@ namespace StickyWeapons
             cursor.Index -= 5;
             //cursor.Emit(Ldarg_0);
             cursor.Emit(Ldloc_2);
-            cursor.EmitDelegate<Func<Player, Item, bool>>((player, item) => { if (player.itemAnimation == 0) player.JustDroppedAnItem = false; return items != null && index < max; });// Main.NewText((items == null, index, max), Main.DiscoColor); //Main.NewText((player.itemTime, item.Name), Main.DiscoColor);
+            cursor.EmitDelegate<Func<Player, Item, bool>>((player, item) => { if (player.itemAnimation == 0) player.JustDroppedAnItem = false; var stickyPlr = player.GetModPlayer<StickyPlayer>(); return stickyPlr.items != null && stickyPlr.index < stickyPlr.max; });// Main.NewText((items == null, index, max), Main.DiscoColor); //Main.NewText((player.itemTime, item.Name), Main.DiscoColor);
             cursor.Emit(Brtrue_S, label);
             cursor.Emit(Ldarg_0);
             //cursor.Emit(Ret);
@@ -331,7 +353,7 @@ namespace StickyWeapons
         public bool CanChoose(Item _item) => _item.active && _item.type != 0 && (_item.damage > 0 || _item.type == ModContent.ItemType<StickyItem>()) && _item.useAnimation > 2 && Vector2.DistanceSquared(_item.Center, Item.Center) <= 4096;
         public override void Update(ref float gravity, ref float maxFallSpeed)
         {
-            Main.NewText(StickyWeapons.value);
+            //Main.NewText(StickyWeapons.value);
             Item item1 = null;
             foreach (var _item in Main.item)
             {
@@ -363,6 +385,7 @@ namespace StickyWeapons
                         item1.TurnToAir();
                         _item.TurnToAir();
                         Item.stack--;
+                        if (Item.stack <= 0) Item.TurnToAir();
                         var list = new List<Item>();
                         sticky.GetItemSet(list);
                         sticky.ItemSet = list.ToArray();
@@ -372,7 +395,7 @@ namespace StickyWeapons
                         int value = 0;
                         int useTime = 0;
                         int useAnimation = 0;
-
+                        bool channel = false;
                         foreach (var i in sticky.ItemSet)
                         {
                             width = i.width > width ? i.width : width;
@@ -380,8 +403,8 @@ namespace StickyWeapons
                             rare = i.rare > rare ? i.rare : rare;
                             useTime = i.useTime > useTime ? i.useTime : useTime;
                             useAnimation = i.useAnimation > useAnimation ? i.useAnimation : useAnimation;
-
                             value += i.value + 5;
+                            channel |= i.channel;
                         }
                         sticky.Item.width = width;
                         sticky.Item.height = height;
@@ -390,7 +413,7 @@ namespace StickyWeapons
                         sticky.Item.useTime = useTime;
                         sticky.Item.useAnimation = useAnimation;
                         sticky.Item.useStyle = 1;
-
+                        sticky.Item.channel = channel;
                         //Item.TurnToAir();
 
                     }
