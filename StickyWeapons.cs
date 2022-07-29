@@ -345,11 +345,11 @@ namespace StickyWeapons
 
     public class Glue : ModItem
     {
-        public override void SetStaticDefaults()
-        {
-            DisplayName.SetDefault("胶水");
-            Tooltip.SetDefault("看起来可以把两件道具粘起来...在它把你的手和道具粘起来之前");
-        }
+        //public override void SetStaticDefaults()
+        //{
+        //    DisplayName.SetDefault("胶水");
+        //    Tooltip.SetDefault("看起来可以把两件道具粘起来...在它把你的手和道具粘起来之前");
+        //}
         public bool CanChoose(Item _item) => _item.active && _item.type != 0 && (_item.damage > 0 || _item.type == ModContent.ItemType<StickyItem>()) && _item.useAnimation > 2 && Vector2.DistanceSquared(_item.Center, Item.Center) <= 4096;
         public override void Update(ref float gravity, ref float maxFallSpeed)
         {
@@ -432,7 +432,7 @@ namespace StickyWeapons
             Item.value = 1;
             Item.height = Item.width = 10;
         }
-        public override string Texture => "Terraria/Images/Item_" + ItemID.Gel;
+        //public override string Texture => "Terraria/Images/Item_" + ItemID.Gel;
         public override void AddRecipes()
         {
             CreateRecipe().AddIngredient(ItemID.Gel, 5).Register();
@@ -1175,10 +1175,10 @@ namespace StickyWeapons
             var rarities = (List<ModRarity>)typeof(RarityLoader).GetField("rarities", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
             return type >= ItemRarityID.Count && type < RarityLoader.RarityCount ? rarities[type - ItemRarityID.Count] : null;
         }
-        public override void SetStaticDefaults()
-        {
-            DisplayName.SetDefault("黏在一起的武器！");
-        }
+        //public override void SetStaticDefaults()
+        //{
+        //    DisplayName.SetDefault("黏在一起的武器！");
+        //}
     }
 
 }

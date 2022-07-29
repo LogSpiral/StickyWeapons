@@ -1,0 +1,12 @@
+Mods:{
+	StickyWeapons:{
+		ItemName:{
+			Glue:Glue
+			StickyItem:Weapons that stick together!
+		}
+		ItemTooltip:
+		{
+			Glue:It looks like you can stick tools together ... before it sticks your hands and tools together.
+		}
+	}
+}

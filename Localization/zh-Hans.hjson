@@ -1,0 +1,12 @@
+Mods:{
+	StickyWeapons:{
+		ItemName:{
+			Glue:胶水
+			StickyItem:黏在一起的武器！
+		}
+		ItemTooltip:
+		{
+			Glue:看起来可以把两件道具粘起来...在它把你的手和道具粘起来之前
+		}
+	}
+}
