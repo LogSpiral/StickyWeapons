@@ -41,7 +41,7 @@ namespace StickyWeapons
             if (!cursor.TryGotoPrev(i => i.MatchLdarg(3))) return;
             cursor.Emit(Ldarg_0);
             cursor.Emit(Ldarg_1);
-            cursor.EmitDelegate<Func<Player, Item, bool>>((player, item) => { var stickyPlr = player.GetModPlayer<StickyPlayer>(); if (stickyPlr.items == null || stickyPlr.index == stickyPlr.max) {  return false; } return true; });//!(stickyPlr.items == null || stickyPlr.index == stickyPlr.max)//Main.NewText(item.Name, Color.Chocolate);
+            cursor.EmitDelegate<Func<Player, Item, bool>>((player, item) => { var stickyPlr = player.GetModPlayer<StickyPlayer>(); if (stickyPlr.items == null || stickyPlr.index == stickyPlr.max) { return false; } return true; });//!(stickyPlr.items == null || stickyPlr.index == stickyPlr.max)//Main.NewText(item.Name, Color.Chocolate);
             cursor.Emit(Brtrue_S, label);
             //if (!cursor.TryGotoNext(i => i.MatchLdfld<Item>("useTime"))) return;
             //cursor.Index++;
@@ -429,13 +429,53 @@ namespace StickyWeapons
         public override void SetDefaults()
         {
             Item.maxStack = 999;
-            Item.value = 1;
+            Item.value = 5;
             Item.height = Item.width = 10;
         }
         //public override string Texture => "Terraria/Images/Item_" + ItemID.Gel;
         public override void AddRecipes()
         {
             CreateRecipe().AddIngredient(ItemID.Gel, 5).Register();
+        }
+    }
+    public class OrganicSolvent : ModItem
+    {
+        public override void Update(ref float gravity, ref float maxFallSpeed)
+        {
+            foreach (var i in Main.item)
+            {
+                if (i.active && i.type == ModContent.ItemType<StickyItem>() && i.ModItem != null && Vector2.Distance(Item.Center, i.Center) <= 64 && i.ModItem is StickyItem sticky && sticky.ItemSet != null)
+                {
+                    Item.stack--;
+                    if (Item.stack <= 0) Item.TurnToAir();
+                    foreach (var _item in sticky.ItemSet)
+                    {
+                        var currentItem = Main.item[Item.NewItem(Item.GetSource_Misc(""), i.Center, 1)] = _item.Clone();
+                        currentItem.Center = Item.Center;
+                        for (int n = 0; n < 100; n++)
+                        {
+                            Dust.NewDustPerfect(Item.Center, DustID.Clentaminator_Cyan, (n / 99f * MathHelper.TwoPi).ToRotationVector2()).noGravity = true;
+                        }
+                        currentItem.velocity = Main.rand.NextVector2Unit() * Main.rand.NextFloat(0, 4);
+                    }
+                    Item.NewItem(Item.GetSource_Misc(""), i.Center, ItemID.Gel, 5 * sticky.ItemSet.Length);
+                    Item.NewItem(Item.GetSource_Misc(""), i.Center, ItemID.Ale);
+                    i.TurnToAir();
+                    break;
+                }
+
+            }
+        }
+        public override void SetDefaults()
+        {
+            Item.maxStack = 999;
+            Item.value = 25;
+            Item.height = Item.width = 10;
+        }
+        //public override string Texture => "Terraria/Images/Item_" + ItemID.Gel;
+        public override void AddRecipes()
+        {
+            CreateRecipe().AddIngredient(ItemID.Gel, 5).AddIngredient(ItemID.Ale).Register();
         }
     }
     public class StickyItem : ModItem

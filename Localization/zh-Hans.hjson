@@ -3,10 +3,12 @@ Mods:{
 		ItemName:{
 			Glue:胶水
 			StickyItem:黏在一起的武器！
+			OrganicSolvent:有机溶剂
 		}
 		ItemTooltip:
 		{
 			Glue:看起来可以把两件道具粘起来...在它把你的手和道具粘起来之前
+			OrganicSolvent:溶解掉凝胶并且返还所有东西，这真的合理吗？
 		}
 	}
 }

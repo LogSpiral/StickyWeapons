@@ -1,13 +1,20 @@
 [i:3456][i:3457][i:3458][i:3459][i:3456][i:3457][i:3458][i:3459]
 内容：
 Contents：
-实现了手持武器的显示，因为模组武器的实现方法各不相同，所以这个模组无法适配于所有模组武器。
-The display of the hand-held weapon is realized. Because modded weapons are implemented in different ways, this mod can not be adapted to all modded weapons.
-实现了更炫酷的挥砍效果（修改了武器的碰撞箱）。
-Implemented more cool slashing effects(The hitbox of the weapon is modified).
-[i:3456][i:3457][i:3458][i:3459][i:3456][i:3457][i:3458][i:3459]
-加入了未实现的武器——第一分形。
-With a unrealized weapon called the FirstFractal.
+增加了很容易制作的消耗性道具：胶水，用五个凝胶徒手制作
+Added a consumable item that are easy to make：Glue,you can create it by hand,this will cost 5 gels.
+将胶水和两把武器丢出去，就能把它们粘起来！(需要是能发射弹幕的武器，不然效果不明显
+Throw the glue and throw two weapons away,then they will stick together by itself！（You'd better use the weapons that can shoot projectiles,if not,the use effect may not significant.
+粘起来的武器们也能继续粘更多的，你甚至可以融合所有的武器(但是绝对会有BUG
+The Sticked Weapon can sticks more weapon,you can even stick all of the weapons by your self(lots lots of BUG
+很可能出问题，目前已知的原版用不了这个的武器有棱镜 天顶剑等(自己多试试，我也不清楚
+It has a high possibility to make error,the weapon can't stick together in vanilla Terraria may be LastPrism,Zenith......(try it your self,I'm not sure
+并且打开游戏之后重新加载可能会出大问题
+And reload mods after begin the game and first load may cause a big Problem.
+增加了1145141919810个BUG
+Add 1145141919810 BUGs
+[c/FF0000:不支持联机同步]
+[c/FF0000:Don't support Multiplayer]
 
 [i:3456][i:3457][i:3458][i:3459][i:3456][i:3457][i:3458][i:3459]
 制作人员：
@@ -19,10 +26,4 @@ Programmer：
 
 特别感谢：
 SpecialThanks：
-[c/00FFE5:逆风而行的信鸽(Genesis)]
-武器显示和碰撞修改等由这位大哥制作
-WeaponDisplay And HitBox Modify Made By Him. 
-
-[c/00FF46:Cyril]
-我在他的示例下大概学会了联机同步
-I've Learned How To SyncData Through His Example.
+[c/FF66CC:夜谷紫幽(Ye you)]

@@ -3,10 +3,12 @@ Mods:{
 		ItemName:{
 			Glue:Glue
 			StickyItem:Weapons that stick together!
+			OrganicSolvent:OrganicSolvent
 		}
 		ItemTooltip:
 		{
 			Glue:It looks like you can stick tools together ... before it sticks your hands and tools together.
+			OrganicSolvent:Return All of The items that sticked in some glue.OMG is that make a sense?
 		}
 	}
 }
