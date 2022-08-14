@@ -1,6 +1,6 @@
 displayName = Stick Your Weapons(黏住你的武器)
 author = 阿汪(向内延伸的对数螺线)
-version = 0.0.2
+version = 0.0.3
 hideResources = false
 hideCode = false
 includeSource = true
