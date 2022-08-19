@@ -7,14 +7,10 @@ Added a consumable item that are easy to make：Glue,you can create it by hand,t
 Throw the glue and throw two weapons away,then they will stick together by itself！（You'd better use the weapons that can shoot projectiles,if not,the use effect may not significant.
 粘起来的武器们也能继续粘更多的，你甚至可以融合所有的武器(但是绝对会有BUG
 The Sticked Weapon can sticks more weapon,you can even stick all of the weapons by your self(lots lots of BUG
-很可能出问题，目前已知的原版用不了这个的武器有棱镜 天顶剑等(自己多试试，我也不清楚
-It has a high possibility to make error,the weapon can't stick together in vanilla Terraria may be LastPrism,Zenith......(try it your self,I'm not sure
-并且打开游戏之后重新加载可能会出大问题
-And reload mods after begin the game and first load may cause a big Problem.
 增加了1145141919810个BUG
 Add 1145141919810 BUGs
-[c/FF0000:不支持联机同步]
-[c/FF0000:Don't support Multiplayer]
+[c/FF0000:也许不支持联机同步]
+[c/FF0000:May Support Multiplayer Now]
 
 [i:3456][i:3457][i:3458][i:3459][i:3456][i:3457][i:3458][i:3459]
 制作人员：

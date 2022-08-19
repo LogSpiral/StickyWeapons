@@ -279,9 +279,20 @@ namespace StickyWeapons
             float heightOffsetHitboxCenter = self.HeightOffsetHitboxCenter;
         myLabel:
             stickyPlr.index++;
-            if (stickyPlr.index >= stickyPlr.max) return;
+            if (stickyPlr.index >= stickyPlr.max) 
+            { 
+                if (Main.myPlayer == self.whoAmI)
+                { 
+                    if (self.selectedItem == 58) 
+                        Main.mouseItem = self.HeldItem; 
+                    else 
+                        Main.mouseItem.SetDefaults(); 
+                }  
+                return; 
+            }// self.lastVisualizedSelectedItem = self.HeldItem; 
+            //Main.NewText(self.lastVisualizedSelectedItem.Name);
             Item item = stickyPlr.items[stickyPlr.index];
-            if (Main.myPlayer == i && Terraria.GameInput.PlayerInput.ShouldFastUseItem)
+            if (Main.myPlayer == i && PlayerInput.ShouldFastUseItem)
                 self.controlUseItem = true;
             goto DecrementItemAnimation;
         ReuseDelayAndAnimationStart:
@@ -373,7 +384,6 @@ namespace StickyWeapons
             goto HoldAndUseStyle;
 
         DecrementItemAnimation:
-
             Item item2 = (self.itemAnimation > 0) ? self.lastVisualizedSelectedItem : item;
             Rectangle drawHitbox = Item.GetDrawHitbox(item2.type, self);
             self.compositeFrontArm.enabled = false;
@@ -1183,6 +1193,14 @@ namespace StickyWeapons
                         _item.TurnToAir();
                         Item.stack--;
                         if (Item.stack <= 0) Item.TurnToAir();
+                        if (Main.netMode == NetmodeID.MultiplayerClient)
+                        {
+                            NetMessage.SendData(MessageID.SyncItem, -1, -1, null, Item.whoAmI, 1f);
+                            NetMessage.SendData(MessageID.SyncItem, -1, -1, null, item1.whoAmI, 1f);
+                            NetMessage.SendData(MessageID.SyncItem, -1, -1, null, _item.whoAmI, 1f);
+
+                        }
+
                         var list = new List<Item>();
                         sticky.GetItemSet(list);
                         sticky.ItemSet = list.ToArray();
@@ -1190,11 +1208,12 @@ namespace StickyWeapons
                         //Item.TurnToAir();
 
                     }
-                    else
-                    {
-                        stickyIndex.TurnToAir();
-                    }
-                    NetMessage.SendData(MessageID.SyncItem, -1, -1, null, stickyIndex.whoAmI, 1f);
+                    //else
+                    //{
+                    //    stickyIndex.TurnToAir();
+                    //}
+                    if (Main.netMode == NetmodeID.MultiplayerClient)
+                        NetMessage.SendData(MessageID.SyncItem, -1, -1, null, stickyIndex.whoAmI, 1f);
                     break;
                 }
             }
@@ -1228,9 +1247,10 @@ namespace StickyWeapons
                         var index = Item.NewItem(Item.GetSource_Misc(""), Item.Center, 1);
                         Main.item[index] = _item.Clone();
                         var currentItem = Main.item[index];
-                        //currentItem.whoAmI = index;
+                        currentItem.whoAmI = index;
                         currentItem.velocity = Main.rand.NextVector2Unit() * Main.rand.NextFloat(0, 4);
-                        Main.NewText((_item.Name, currentItem.Name, currentItem.active, currentItem.stack, _item.whoAmI, index, currentItem.whoAmI));
+                        currentItem.Center = Item.Center;
+                        //Main.NewText((_item.Name, currentItem.Name, currentItem.active, currentItem.stack, _item.whoAmI, index, currentItem.whoAmI));
                         if (Main.netMode == NetmodeID.MultiplayerClient)
                             NetMessage.SendData(MessageID.SyncItem, -1, -1, null, index, 1f);
                     }
@@ -1240,12 +1260,16 @@ namespace StickyWeapons
                     }
                     var index1 = Item.NewItem(Item.GetSource_Misc(""), i.Center, ItemID.Gel, 5 * sticky.ItemSet.Length);
                     var index2 = Item.NewItem(Item.GetSource_Misc(""), i.Center, ItemID.Ale);
+                    i.TurnToAir();
+
                     if (Main.netMode == NetmodeID.MultiplayerClient)
                     {
                         NetMessage.SendData(MessageID.SyncItem, -1, -1, null, index1, 1f);
                         NetMessage.SendData(MessageID.SyncItem, -1, -1, null, index2, 1f);
+                        NetMessage.SendData(MessageID.SyncItem, -1, -1, null, Item.whoAmI, 1f);
+                        NetMessage.SendData(MessageID.SyncItem, -1, -1, null, i.whoAmI, 1f);
                     }
-                    i.TurnToAir();
+
                     break;
                 }
 
@@ -2053,8 +2077,13 @@ namespace StickyWeapons
                     var _item = Main.item[index] = i.Clone();
                     _item.whoAmI = index;
                     _item.velocity = -i.velocity;
+                    _item.Center = Item.Center;
+
                     if (Main.netMode == NetmodeID.MultiplayerClient)
+                    {
                         NetMessage.SendData(MessageID.SyncItem, -1, -1, null, index, 1f);
+                        NetMessage.SendData(MessageID.SyncItem, -1, -1, null, Item.whoAmI, 1f);
+                    }
                     break;
                 }
             }
