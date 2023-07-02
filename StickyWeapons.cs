@@ -24,6 +24,8 @@ using Terraria.Audio;
 using static StickyWeapons.StickyFunc;
 using Terraria.DataStructures;
 using System.IO;
+using Terraria.Localization;
+using ReLogic.Graphics;
 
 namespace StickyWeapons
 {
@@ -279,16 +281,16 @@ namespace StickyWeapons
             float heightOffsetHitboxCenter = self.HeightOffsetHitboxCenter;
         myLabel:
             stickyPlr.index++;
-            if (stickyPlr.index >= stickyPlr.max) 
-            { 
+            if (stickyPlr.index >= stickyPlr.max)
+            {
                 if (Main.myPlayer == self.whoAmI)
-                { 
-                    if (self.selectedItem == 58) 
-                        Main.mouseItem = self.HeldItem; 
-                    else 
-                        Main.mouseItem.SetDefaults(); 
-                }  
-                return; 
+                {
+                    if (self.selectedItem == 58)
+                        Main.mouseItem = self.HeldItem;
+                    else
+                        Main.mouseItem.SetDefaults();
+                }
+                return;
             }// self.lastVisualizedSelectedItem = self.HeldItem; 
             //Main.NewText(self.lastVisualizedSelectedItem.Name);
             Item item = stickyPlr.items[stickyPlr.index];
@@ -1156,14 +1158,14 @@ namespace StickyWeapons
         //    DisplayName.SetDefault("胶水");
         //    Tooltip.SetDefault("看起来可以把两件道具粘起来...在它把你的手和道具粘起来之前");
         //}
-        public bool CanChoose(Item _item) => _item.active && _item.type != ItemID.None && (_item.damage > 0 || _item.type == ModContent.ItemType<StickyItem>()) && _item.maxStack == 1 && !_item.consumable && _item.useAnimation > 2 && Vector2.DistanceSquared(_item.Center, Item.Center) <= 4096;
+        public static bool CanChoose(Item _item) => _item.active && _item.type != ItemID.None && (_item.damage > 0 || _item.type == ModContent.ItemType<StickyItem>()) && _item.maxStack == 1 && !_item.consumable && _item.useAnimation > 2;
         public override void Update(ref float gravity, ref float maxFallSpeed)
         {
             //Main.NewText(StickyWeapons.value);
             Item item1 = null;
             foreach (var _item in Main.item)
             {
-                if (CanChoose(_item))
+                if (CanChoose(_item) && Vector2.DistanceSquared(_item.Center, Item.Center) <= 4096)
                 {
                     item1 = _item;
                     break;
@@ -1172,7 +1174,7 @@ namespace StickyWeapons
             if (item1 == null) return;
             foreach (var _item in Main.item)
             {
-                if (CanChoose(_item) && _item.GetHashCode() != item1.GetHashCode())
+                if (CanChoose(_item) && Vector2.DistanceSquared(_item.Center, Item.Center) <= 4096 && _item.GetHashCode() != item1.GetHashCode())
                 {
 
                     var stickyIndex = Main.item[Item.NewItem(Item.GetSource_Misc("Sticky!"), Item.Center, ModContent.ItemType<StickyItem>())];// Item.NewItem(Item.GetSource_Misc("Sticky!"), Item.Center, ModContent.ItemType<StickyItem>())
@@ -1317,6 +1319,7 @@ namespace StickyWeapons
             bool channel = false;
             float knockBack = 0;
             int damage = 0;
+            int useStyle = ItemUseStyleID.Swing;
             foreach (var i in ItemSet)
             {
                 width = i.width > width ? i.width : width;
@@ -1329,6 +1332,7 @@ namespace StickyWeapons
                 knockBack = i.knockBack > knockBack ? i.knockBack : knockBack;
                 value += i.value + 5;
                 channel |= i.channel;
+                if (i.useStyle == ItemUseStyleID.Shoot) useStyle = ItemUseStyleID.Shoot;
             }
             Item.width = width;
             Item.height = height;
@@ -1339,7 +1343,7 @@ namespace StickyWeapons
             Item.shootSpeed = shootSpeed;
             Item.damage = damage;
             Item.knockBack = knockBack;
-            Item.useStyle = ItemUseStyleID.Swing;
+            Item.useStyle = useStyle;
             Item.channel = channel;
         }
         public override string Texture => "Terraria/Images/Item_" + ItemID.Gel;
@@ -2052,7 +2056,7 @@ namespace StickyWeapons
             ItemSet = list.ToArray();
             SetDefaults();
         }
-        static ModRarity GetRarity(int type)
+        public static ModRarity GetRarity(int type)
         {
             var rarities = (List<ModRarity>)typeof(RarityLoader).GetField("rarities", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
             return type >= ItemRarityID.Count && type < RarityLoader.RarityCount ? rarities[type - ItemRarityID.Count] : null;
@@ -2092,6 +2096,234 @@ namespace StickyWeapons
         {
             Item.maxStack = 999;
             Item.height = Item.width = 10;
+        }
+    }
+    public class ShowItem : ModItem
+    {
+        public override string Texture => "Terraria/Images/Item_1";
+        public override bool PreDrawInInventory(SpriteBatch spriteBatch, Vector2 position, Rectangle frame, Color drawColor, Color itemColor, Vector2 origin, float scale)
+        {
+            if (Main.LocalPlayer == null || StickySystem.weaponTypes == null) return true;
+
+            //if ((int)(Main.GlobalTimeWrappedHourly * 60) % 60 == 0)
+            //    TextureAssets.Item[Type] = TextureAssets.Item[StickySystem.weaponTypes == null ? 1 : Main.rand.Next(StickySystem.weaponTypes)];
+            bool foundFirst = false;
+            foreach (var item in Main.LocalPlayer.inventory) 
+            {
+                if (StickySystem.weaponTypes.Contains(item.type)) 
+                {
+                    if (!foundFirst)
+                    {
+                        foundFirst = true;
+                        if (!FoundFirstWeaponInInventory) 
+                        {
+                            FoundFirstWeaponInInventory = true;
+                            TextureAssets.Item[Type] = TextureAssets.Item[item.type];
+                            break;
+                        }
+                    }
+                    else 
+                    {
+                        FoundFirstWeaponInInventory = false;
+                        TextureAssets.Item[Type] = TextureAssets.Item[item.type];
+                        break;
+                    }
+
+                }
+            }
+            //spriteBatch.DrawString(FontAssets.MouseText.Value, FoundFirstWeaponInInventory.ToString(), position, Color.White);
+            return base.PreDrawInInventory(spriteBatch, position, frame, drawColor, itemColor, origin, scale);
+        }
+        public static bool FoundFirstWeaponInInventory;
+        public override void UpdateInventory(Player player)
+        {
+            Item.TurnToAir();
+            base.UpdateInventory(player);
+        }
+    }
+    public class ReturnStickyBag : ModItem 
+    {
+        public override void SetDefaults()
+        {
+            Item.width = Item.height = 32;
+            Item.value = 1;
+            Item.rare = ItemRarityID.Cyan;
+            Item.maxStack = 114514;
+            base.SetDefaults();
+        }
+        public override void ModifyTooltips(List<TooltipLine> tooltips)
+        {
+            if (items == null) return;
+            foreach (var item in items)
+            {
+                var tip = new TooltipLine(Mod, "Items", $"[i:{item.type}]{item.Name} x {item.stack}");
+                var rare = item.rare;
+                float num3 = Main.mouseTextColor / 255f;
+                float num4 = num3;
+                int a = Main.mouseTextColor;
+                var color = new Color(num4, num4, num4, num4);
+                if (rare == -11)
+                    color = new Color((byte)(255f * num4), (byte)(175f * num4), (byte)(0f * num4), a);
+
+                if (rare == -1)
+                    color = new Color((byte)(130f * num4), (byte)(130f * num4), (byte)(130f * num4), a);
+
+                if (rare == 1)
+                    color = new Color((byte)(150f * num4), (byte)(150f * num4), (byte)(255f * num4), a);
+
+                if (rare == 2)
+                    color = new Color((byte)(150f * num4), (byte)(255f * num4), (byte)(150f * num4), a);
+
+                if (rare == 3)
+                    color = new Color((byte)(255f * num4), (byte)(200f * num4), (byte)(150f * num4), a);
+
+                if (rare == 4)
+                    color = new Color((byte)(255f * num4), (byte)(150f * num4), (byte)(150f * num4), a);
+
+                if (rare == 5)
+                    color = new Color((byte)(255f * num4), (byte)(150f * num4), (byte)(255f * num4), a);
+
+                if (rare == 6)
+                    color = new Color((byte)(210f * num4), (byte)(160f * num4), (byte)(255f * num4), a);
+
+                if (rare == 7)
+                    color = new Color((byte)(150f * num4), (byte)(255f * num4), (byte)(10f * num4), a);
+
+                if (rare == 8)
+                    color = new Color((byte)(255f * num4), (byte)(255f * num4), (byte)(10f * num4), a);
+
+                if (rare == 9)
+                    color = new Color((byte)(5f * num4), (byte)(200f * num4), (byte)(255f * num4), a);
+
+                if (rare == 10)
+                {
+                    color = new Color((byte)(255f * num4), (byte)(40f * num4), (byte)(100f * num4), a);
+                }
+
+                if (rare == 11)
+                    color = new Color((byte)(180f * num4), (byte)(40f * num4), (byte)(255f * num4), a);
+
+                if (rare > 11)
+                    color = StickyItem.GetRarity(rare).RarityColor * num4;
+
+                if (item.expert || rare == -12)
+                    color = new Color((byte)(Main.DiscoR * num4), (byte)(Main.DiscoG * num4), (byte)(Main.DiscoB * num4), a);
+
+                if (item.master || rare == -13)
+                    color = new Color((byte)(255f * num4), (byte)(Main.masterColor * 200f * num4), 0, a);
+                tip.OverrideColor = color;
+                tooltips.Add(tip);
+            }
+            base.ModifyTooltips(tooltips);
+        }
+        public Item[] items;
+        public override void SetStaticDefaults()
+        {
+            DisplayName.SetDefault("返还袋");
+            Tooltip.SetDefault("包含以下物品");
+            base.SetStaticDefaults();
+        }
+        public override bool CanRightClick()
+        {
+            return true;
+        }
+        public override string Texture => "Terraria/Images/Item_" + ItemID.KingSlimeBossBag;
+
+        public override void RightClick(Player player)
+        {
+            for (int n = 0; n < 500; n++)
+            {
+                var fac = n / 500f - 0.5f;
+                var color = Main.hslToRgb(fac * 0.1f + 0.6f, 1f, .75f);
+                fac *= MathHelper.TwoPi;
+                var position = (fac * 3).ToRotationVector2() * (MathF.Sin(5 * fac) - .5f);
+                Dust dust = Dust.NewDustPerfect(player.Center + position * 256, 278, new Vector2(-position.Y, position.X), 100, color, 1f);
+                dust.scale = 0.4f + Main.rand.NextFloat(-1, 1) * 0.1f;
+                dust.fadeIn = 0.4f + Main.rand.NextFloat() * 0.3f;
+                dust.fadeIn *= .5f;
+                dust.noGravity = true;
+                dust.velocity *= (3f + Main.rand.NextFloat() * 4f) * 2;
+            }
+            foreach (var item in items) 
+            {
+                player.QuickSpawnClonedItem(Item.GetSource_GiftOrReward(), item, item.stack);
+            }
+        }
+    }
+    public class StickySystem : ModSystem
+    {
+        public static int[] weaponTypes;
+        public RecipeGroup recipeGroup;
+        public override void AddRecipeGroups()
+        {
+            List<int> types = new List<int>
+            {
+                ModContent.ItemType<ShowItem>()
+            };
+            for (int i = 0; i < ItemLoader.ItemCount; i++)
+            {
+                Item item = new Item(i);
+                if (Glue.CanChoose(item)) types.Add(i);
+            }
+            weaponTypes = types.ToArray();
+            recipeGroup = new RecipeGroup(() => Language.GetTextValue("LegacyMisc.37") + " 武器Weapons(包里前两个The first two in Inventory)", weaponTypes);
+            RecipeGroup.RegisterGroup("SitckyWeapons:Weapons!!", recipeGroup);
+        }
+        public override void PostUpdateTime()
+        {
+            if (weaponTypes != null && weaponTypes.Length > 0 && (int)(Main.GlobalTimeWrappedHourly * 2) % 2 == 0)
+                recipeGroup.IconicItemId = Main.rand.Next(weaponTypes);
+        }
+        public override void AddRecipes()
+        {
+            Recipe recipe = Recipe.Create(ModContent.ItemType<StickyItem>());
+            recipe.AddIngredient<Glue>(1);
+            recipe.AddRecipeGroup("SitckyWeapons:Weapons!!");
+            recipe.AddRecipeGroup("SitckyWeapons:Weapons!!");
+            recipe.AddOnCraftCallback
+            (
+                (recipe, item, consumedItems) =>
+                {
+                    StickyItem sticky = item.ModItem as StickyItem;
+                    var items = from target in consumedItems where target.type != ModContent.ItemType<Glue>() select target;
+                    var array = items.ToArray();
+                    sticky.theItems.Item1 = array[0].Clone();
+                    sticky.theItems.Item2 = array[1].Clone();
+                    sticky.theItems.Item1.stack = 1;
+                    sticky.theItems.Item2.stack = 1;
+                    var list = new List<Item>();
+                    sticky.GetItemSet(list);
+                    sticky.ItemSet = list.ToArray();
+                    sticky.SetDefaults();
+
+                    //foreach (var i in consumedItems)
+                    //{
+                    //    Main.NewText((i.Clone().Name, i.type, i.stack));
+                    //}
+                }
+            );
+            recipe.Register();
+
+            recipe = Recipe.Create(ModContent.ItemType<ReturnStickyBag>());
+            recipe.AddIngredient<StickyItem>(1);
+            recipe.AddIngredient<OrganicSolvent>(1);
+            recipe.AddOnCraftCallback
+            (
+                (recipe, item, consumedItems) =>
+                {
+                    ReturnStickyBag returnStickyBag = item.ModItem as ReturnStickyBag;
+                    List<Item> items = new List<Item>();
+                    var set = (consumedItems[0].ModItem as StickyItem).ItemSet;
+                    foreach (var _item in set) 
+                    {
+                        items.Add(_item.Clone());
+                    }
+                    items.Add(new Item(ItemID.Ale));
+                    items.Add(new Item(ItemID.Gel, set.Length * 5));
+                    returnStickyBag.items = items.ToArray();
+                }
+            );
+            recipe.Register();
         }
     }
     //public class TestClass : Projectile
