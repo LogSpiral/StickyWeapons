@@ -1,0 +1,31 @@
+
+Mods: {
+	StickyWeapons: {
+		Items: {
+			Glue: {
+				DisplayName: Glue
+				Tooltip:
+					'''
+					It looks like you can stick tools together ... before it sticks your hands and tools together.
+					(Throw Out It With Other Two [c/FF0000:Weapons] And They Will [c/00FFFF:Stick Together] And Use Both Of Them In The Same Time.
+					'''
+			}
+
+			StickyItem.DisplayName: Weapons that stick together!
+
+			OrganicSolvent: {
+				DisplayName: OrganicSolvent
+				Tooltip: Return All of The items that sticked in some glue.OMG is that make a sense?
+			}
+
+			CopyItem.DisplayName: Copy Item
+
+			ReturnStickyBag: {
+				DisplayName: 返还袋
+				Tooltip: 包含以下物品
+			}
+
+			ShowItem.DisplayName: Show Item
+		}
+	}
+}

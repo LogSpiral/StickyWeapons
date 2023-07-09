@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using System;
@@ -108,9 +108,9 @@ namespace StickyWeapons
         {
             //IL.Terraria.Player.ApplyItemTime += Player_ApplyItemTime_Sticky;
             //IL.Terraria.Player.ItemCheck_Inner += Player_ItemCheck_InnerSticky;//_ShootLoop
-            On.Terraria.Player.ApplyItemTime += Player_ApplyItemTime_Sticky_On;
+            Terraria.On_Player.ApplyItemTime += Player_ApplyItemTime_Sticky_On;
             //On.Terraria.Player.ItemCheck_GetMeleeHitbox += Player_ItemCheck_GetMeleeHitbox;
-            On.Terraria.Player.ItemCheck_Inner += Player_ItemCheck_Inner_Sticky_On;
+            Terraria.On_Player.ItemCheck_Inner += Player_ItemCheck_Inner_Sticky_On;
             //On.Terraria.Player.ge
             base.Load();
         }
@@ -251,7 +251,7 @@ namespace StickyWeapons
         //    }
         //}
 
-        private void Player_ItemCheck_Inner_Sticky_On(On.Terraria.Player.orig_ItemCheck_Inner orig, Player self, int i)
+        private void Player_ItemCheck_Inner_Sticky_On(Terraria.On_Player.orig_ItemCheck_Inner orig, Player self, int i)
         {
             var stickyPlr = self.GetModPlayer<StickyPlayer>();
             if (self.HeldItem.ModItem is StickyItem sticky)
@@ -265,7 +265,7 @@ namespace StickyWeapons
                 stickyPlr.items = null;
                 stickyPlr.index = -1;
                 stickyPlr.max = -1;
-                orig.Invoke(self, i);
+                orig.Invoke(self);
                 return;
             }
             if (self.CCed)
@@ -815,7 +815,7 @@ namespace StickyWeapons
             if (stickyPlr.index < stickyPlr.max) goto myLabel;
         }
 
-        private void Player_ApplyItemTime_Sticky_On(On.Terraria.Player.orig_ApplyItemTime orig, Player self, Item sItem, float multiplier, bool? callUseItem)
+        private void Player_ApplyItemTime_Sticky_On(Terraria.On_Player.orig_ApplyItemTime orig, Player self, Item sItem, float multiplier, bool? callUseItem)
         {
             //var stickyPlr = self.GetModPlayer<StickyPlayer>();
             //if (stickyPlr.items != null && stickyPlr.index != stickyPlr.max) return;
@@ -2219,8 +2219,8 @@ namespace StickyWeapons
         public Item[] items;
         public override void SetStaticDefaults()
         {
-            DisplayName.SetDefault("返还袋");
-            Tooltip.SetDefault("包含以下物品");
+            // DisplayName.SetDefault("返还袋");
+            // Tooltip.SetDefault("包含以下物品");
             base.SetStaticDefaults();
         }
         public override bool CanRightClick()
@@ -2246,7 +2246,7 @@ namespace StickyWeapons
             }
             foreach (var item in items) 
             {
-                player.QuickSpawnClonedItem(Item.GetSource_GiftOrReward(), item, item.stack);
+                player.QuickSpawnItem(Item.GetSource_GiftOrReward(), item, item.stack);
             }
         }
     }
