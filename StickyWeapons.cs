@@ -2,33 +2,28 @@
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Security.Policy;
 using Terraria;
+using Terraria.Audio;
+using Terraria.DataStructures;
 using Terraria.GameContent;
-using Terraria.ID;
-using Terraria.ModLoader;
-using Terraria.ModLoader.Default;
-using Terraria.ModLoader.Exceptions;
-using Terraria.ModLoader.IO;
-using Terraria.UI.Chat;
-using Mono.Cecil.Cil;
-using static Mono.Cecil.Cil.OpCodes;
-using MonoMod.RuntimeDetour;
-using Terraria.ObjectData;
-using static Terraria.Player;
+using Terraria.GameContent.Achievements;
 using Terraria.GameContent.Golf;
 using Terraria.GameInput;
-using Terraria.Audio;
-using static StickyWeapons.StickyFunc;
-using Terraria.DataStructures;
-using System.IO;
+using Terraria.ID;
 using Terraria.Localization;
-using ReLogic.Graphics;
+using Terraria.ModLoader;
+using Terraria.ModLoader.IO;
+using Terraria.ObjectData;
+using Terraria.UI;
+using static Mono.Cecil.Cil.OpCodes;
 using static Terraria.ModLoader.PlayerDrawLayer;
-using System.Threading.Channels;
-using Terraria.GameContent.Achievements;
+using static Terraria.Player;
 
 namespace StickyWeapons
 {
@@ -38,6 +33,10 @@ namespace StickyWeapons
         public int index = -1;
         public int max = -1;
         public bool moreTimeShoot;
+        public override void ResetEffects()
+        {
+            base.ResetEffects();
+        }
     }
     public static class StickyFunc
     {
@@ -67,7 +66,6 @@ namespace StickyWeapons
     //{
     //    StickyPlayer
     //}
-    //TODO 这个要修的太多了，下次一定
     public class StickyWeapons : Mod
     {
         //ILHook hook1;
@@ -117,10 +115,42 @@ namespace StickyWeapons
             //On_Player.ItemCheck_Inner += Player_ItemCheck_Inner_Sticky_On;
             On_Player.ItemCheck_Inner += On_Player_ItemCheck_Inner_Sticky_OnNew;
             On_Player.ItemCheck_OwnerOnlyCode += On_Player_ItemCheck_OwnerOnlyCode;
+            //On_PlayerDrawLayers.DrawPlayer_27_HeldItem += On_PlayerDrawLayers_DrawPlayer_27_HeldItem;
+            IL_PlayerDrawLayers.DrawPlayer_27_HeldItem += IL_PlayerDrawLayers_DrawPlayer_27_HeldItem_Sticky;
             //On.Terraria.Player.ge
             base.Load();
         }
-
+        public static string testText;
+        private void IL_PlayerDrawLayers_DrawPlayer_27_HeldItem_Sticky(ILContext il)
+        {
+            var c = new ILCursor(il);
+            if (!c.TryGotoNext(i => i.MatchStloc(3)))
+                return;
+            c.Emit(Ldloc_0);
+            c.EmitDelegate(GetWeaponTextureFromItem);
+            if (!c.TryGotoNext(i => i.MatchStloc(5)))
+                return;
+            c.Emit(Ldloc_0);
+            c.EmitDelegate(GetWeaponFrameFromItem);
+        }
+        public static Texture2D GetWeaponTextureFromItem(Texture2D texture, Item item)
+        {
+            var moditem = item.ModItem;
+            if (moditem is StickyItem sticky && sticky.complexTexture != null)
+            {
+                return sticky.complexTexture;
+            }
+            return texture;
+        }
+        public static Rectangle GetWeaponFrameFromItem(Rectangle rectangle, Item item)
+        {
+            var moditem = item.ModItem;
+            if (moditem is StickyItem sticky && sticky.complexTexture != null)
+            {
+                return sticky.complexTexture.Frame();
+            }
+            return rectangle;
+        }
         private void On_Player_ItemCheck_OwnerOnlyCode(On_Player.orig_ItemCheck_OwnerOnlyCode orig, Player self, ref ItemCheckContext context, Item sItem, int weaponDamage, Rectangle heldItemFrame)
         {
             var stickyPlr = self.GetModPlayer<StickyPlayer>();
@@ -966,8 +996,8 @@ namespace StickyWeapons
 
                 if (self.whoAmI == Main.myPlayer)
                 {
-                    if ((self.itemTimeMax != 0 && self.itemTime == self.itemTimeMax) | (!item.IsAir && item.IsNotTheSameAs(self.lastVisualizedSelectedItem)))
-                        self.lastVisualizedSelectedItem = item.Clone();
+                    if (((self.itemTimeMax != 0 && self.itemTime == self.itemTimeMax) | (!item.IsAir && item.IsNotTheSameAs(self.lastVisualizedSelectedItem))) && stickyPlr.index == 0)
+                        self.lastVisualizedSelectedItem = self.HeldItem.Clone();
                 }
                 else
                 {
@@ -2139,6 +2169,22 @@ namespace StickyWeapons
                         //Main.NewText(_item.Name, Color.Cyan);
                         //Main.NewText(Item.useAnimation, Color.Green);
                         //Main.NewText("草");
+                        if (item1.ModItem != null && item1.ModItem is StickyItem _sticky1)
+                        {
+                            Main.RunOnMainThread(() =>
+                            {
+                                _sticky1.complexTexture?.Dispose();
+                                _sticky1.complexTexture = null;
+                            });
+                        }
+                        if (_item.ModItem != null && _item.ModItem is StickyItem _sticky2)
+                        {
+                            Main.RunOnMainThread(() =>
+                            {
+                                _sticky2.complexTexture?.Dispose();
+                                _sticky2.complexTexture = null;
+                            });
+                        }
                         item1.TurnToAir();
                         _item.TurnToAir();
                         Item.stack--;
@@ -2190,6 +2236,12 @@ namespace StickyWeapons
             {
                 if (i.active && i.type == ModContent.ItemType<StickyItem>() && i.ModItem != null && Vector2.Distance(Item.Center, i.Center) <= 64 && i.ModItem is StickyItem sticky && sticky.ItemSet != null)
                 {
+                    Main.RunOnMainThread(() =>
+                    {
+                        sticky.complexTexture?.Dispose();
+                        sticky.complexTexture = null;
+                    });
+
                     Item.stack--;
                     if (Item.stack <= 0) Item.TurnToAir();
                     foreach (var _item in sticky.ItemSet)
@@ -2254,11 +2306,13 @@ namespace StickyWeapons
             ItemIO.Send(item1, writer, true, true);
             ItemIO.Send(item2, writer, true, true);
         }
+        public static bool MeleeCheck(DamageClass damageClass) => damageClass == DamageClass.Melee
+|| damageClass.GetEffectInheritance(DamageClass.Melee) || !damageClass.GetModifierInheritance(DamageClass.Melee).Equals(StatInheritanceData.None);
         public override void SetDefaults()
         {
             if (ItemSet == null) return;
-            int width = 0;
-            int height = 0;
+            int width = -1;
+            int height = -1;
             int rare = -114514;
             int value = 0;
             int useTime = 0;
@@ -2267,7 +2321,7 @@ namespace StickyWeapons
             bool channel = false;
             float knockBack = 0;
             int damage = 0;
-            int useStyle = ItemUseStyleID.Swing;
+            int useStyle = ItemUseStyleID.Shoot;
             foreach (var i in ItemSet)
             {
                 width = i.width > width ? i.width : width;
@@ -2280,10 +2334,14 @@ namespace StickyWeapons
                 knockBack = i.knockBack > knockBack ? i.knockBack : knockBack;
                 value += i.value + 5;
                 channel |= i.channel;
-                if (i.useStyle == ItemUseStyleID.Shoot) useStyle = ItemUseStyleID.Shoot;
+                if (i.useStyle == ItemUseStyleID.Swing) useStyle = ItemUseStyleID.Swing;
+                if (Item.DamageType == DamageClass.Default || (MeleeCheck(i.DamageType) && !MeleeCheck(Item.DamageType)))
+                {
+                    Item.DamageType = i.DamageType;
+                }
             }
-            Item.width = width;
-            Item.height = height;
+            Item.width = width == -1 ? 32 : width;
+            Item.height = height == -1 ? 32 : height;
             Item.rare = rare;
             Item.value = value - 5;
             Item.useTime = useTime;
@@ -2293,6 +2351,38 @@ namespace StickyWeapons
             Item.knockBack = knockBack;
             Item.useStyle = useStyle;
             Item.channel = channel;
+            if (Main.gameMenu) return;
+            var gd = Main.instance.GraphicsDevice;
+            var sp = Main.spriteBatch;
+            Main.RunOnMainThread(
+                () =>
+                {
+                    Vector2 size = default;
+                    foreach (var item in ItemSet)
+                    {
+                        Main.instance.LoadItem(item.type);
+                        var curSize = TextureAssets.Item[item.type].Size();
+                        if (size.X < curSize.X) size.X = curSize.X;
+                        if (size.Y < curSize.Y) size.Y = curSize.Y;
+
+                    }
+                    complexTexture?.Dispose();
+                    complexTexture = new RenderTarget2D(gd, (int)size.X, (int)size.Y);
+                    gd.SetRenderTarget(complexTexture);
+                    gd.Clear(Color.Transparent);
+                    sp.Begin();
+                    List<int> types = new List<int>();
+                    foreach (var item in ItemSet)
+                    {
+                        if (types.Contains(item.type)) continue;
+                        Vector2 curSize = TextureAssets.Item[item.type].Size();
+                        ItemSlot.DrawItemIcon(item, 31, sp, size * Vector2.UnitY + curSize * new Vector2(1, -1) * .5f, 1, 1145, Color.White);
+                        types.Add(item.type);
+                    }
+                    sp.End();
+                    gd.SetRenderTarget(Main.screenTarget);
+                }
+                );
         }
         public override string Texture => "Terraria/Images/Item_" + ItemID.Gel;
         public Item item1
@@ -2313,6 +2403,7 @@ namespace StickyWeapons
         }
         public (Item, Item) theItems;
         public Item[] ItemSet;
+        public RenderTarget2D complexTexture;
         public StickyItem GetItemSet(List<Item> target)
         {
             if (item1 == null || item2 == null) return this;
@@ -2338,6 +2429,55 @@ namespace StickyWeapons
         public override bool PreDrawInInventory(SpriteBatch spriteBatch, Vector2 position, Rectangle frame, Color drawColor, Color itemColor, Vector2 origin, float scale)
         {
             //if (item1 == null || item2 == null) return false;
+            //Main.NewText(complexTexture.GetHashCode());
+
+            if (complexTexture != null)
+            {
+                //ItemSlot.DrawItemIcon()
+                float scaler = 1f;
+                float max = Math.Max(complexTexture.Width, complexTexture.Height);
+                if (max > 30) scaler = 30 / max;
+                spriteBatch.Draw(complexTexture, position, null, drawColor, 0, complexTexture.Size() * .5f, scaler, 0, 0);
+                //spriteBatch.Draw(TextureAssets.MagicPixel.Value, position, new Rectangle(0, 0, 1, 1), Color.Red, 0, new Vector2(.5f), 4f, 0, 0);
+                return false;
+            }
+            else
+            {
+                //Main.NewText("render，没有你我怎么活啊");
+                if (ItemSet == null) return true;
+
+                var gd = Main.instance.GraphicsDevice;
+                var sp = Main.spriteBatch;
+                Vector2 size = default;
+                foreach (var item in ItemSet)
+                {
+                    Main.instance.LoadItem(item.type);
+                    var curSize = TextureAssets.Item[item.type].Size();
+                    if (size.X < curSize.X) size.X = curSize.X;
+                    if (size.Y < curSize.Y) size.Y = curSize.Y;
+                }
+                complexTexture = new RenderTarget2D(gd, (int)size.X, (int)size.Y);
+                sp.End();
+                gd.SetRenderTarget(complexTexture);
+                gd.Clear(Color.Transparent);
+                sp.Begin();
+                List<int> types = new List<int>();
+                foreach (var item in ItemSet)
+                {
+                    if (types.Contains(item.type)) continue;
+                    Vector2 curSize = TextureAssets.Item[item.type].Size();
+                    ItemSlot.DrawItemIcon(item, 31, sp, size * Vector2.UnitY + curSize * new Vector2(1, -1) * .5f, 1, 1145, Color.White);
+                    types.Add(item.type);
+                }
+                sp.End();
+                sp.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp, DepthStencilState.Default, RasterizerState.CullNone, null, Main.UIScaleMatrix);
+
+                gd.SetRenderTarget(Main.screenTarget);
+            }
+            if (item1 != null)
+                Main.instance.LoadItem(item1.type);
+            if (item2 != null)
+                Main.instance.LoadItem(item2.type);
             item1?.StickyDrawInInventory(spriteBatch, position, frame, drawColor, itemColor, origin);
             item2?.StickyDrawInInventory(spriteBatch, position, frame, drawColor, itemColor, origin);
             //Main.NewText()
@@ -2345,6 +2485,11 @@ namespace StickyWeapons
         }
         public override bool PreDrawInWorld(SpriteBatch spriteBatch, Color lightColor, Color alphaColor, ref float rotation, ref float scale, int whoAmI)
         {
+            if (complexTexture != null)
+            {
+                spriteBatch.Draw(complexTexture, Item.Center - Main.screenPosition, null, lightColor, rotation, complexTexture.Size() * .5f, 1f, 0, 0);
+                return false;
+            }
             if (item1 == null || item2 == null) return false;
             if (ItemSet == null) return false;
             for (int n = 0; n < ItemSet.Length; n++)
@@ -2353,6 +2498,7 @@ namespace StickyWeapons
                 float _scale = scale;
                 var _item = ItemSet[n];
                 if (_item == null) continue;
+                Main.instance.LoadItem(_item.type);
                 if (_item.ModItem == null || _item.ModItem.PreDrawInWorld(spriteBatch, lightColor, alphaColor, ref _rotation, ref _scale, whoAmI))
                 {
                     var value = TextureAssets.Item[_item.type].Value;
@@ -2361,24 +2507,6 @@ namespace StickyWeapons
                     spriteBatch.Draw(value, Item.Center - Main.screenPosition, (ani == null) ? value.Frame() : ani.GetFrame(value), alphaColor, rotation, value.Size() * .5f / new Vector2(1, (ani == null) ? 1 : ani.FrameCount), scale, 0, 0);
                 }
             }
-            //float _rotation = rotation;
-            //float _scale = scale;
-            //if (item1.ModItem == null || item1.ModItem.PreDrawInWorld(spriteBatch, lightColor, alphaColor, ref _rotation, ref _scale, whoAmI))
-            //{
-            //    var value = TextureAssets.Item[item1.type].Value;
-            //    var ani = Main.itemAnimations[item1.type];
-
-            //    spriteBatch.Draw(value, Item.Center - Main.screenPosition, (ani == null) ? value.Frame() : ani.GetFrame(value), alphaColor, rotation, value.Size() * .5f / new Vector2(1, (ani == null) ? 1 : ani.FrameCount), scale, 0, 0);
-            //}
-            //_rotation = rotation;
-            //_scale = scale;
-            //if (item2.ModItem == null || item2.ModItem.PreDrawInWorld(spriteBatch, lightColor, alphaColor, ref _rotation, ref _scale, whoAmI))
-            //{
-            //    var value = TextureAssets.Item[item2.type].Value;
-            //    var ani = Main.itemAnimations[item2.type];
-            //    spriteBatch.Draw(value, Item.Center - Main.screenPosition, (ani == null) ? value.Frame() : ani.GetFrame(value), alphaColor, rotation, value.Size() * .5f / new Vector2(1, (ani == null) ? 1 : ani.FrameCount), scale, 0, 0);
-            //}
-            //spriteBatch.Draw(TextureAssets.MagicPixel.Value, Item.Center - Main.screenPosition, new Rectangle(0, 0, 1, 1), Color.Red, 0, new Vector2(.5f), 16f, 0, 0);
             return false;
         }
         public override void ModifyTooltips(List<TooltipLine> tooltips)
@@ -2803,19 +2931,6 @@ namespace StickyWeapons
             }
             catch { }
         }
-        //public void SaveData(TagCompound tag, int depth)
-        //{
-        //    tag.Add("item1" + depth, Save(item1));
-        //    if (item1.ModItem is StickyItem sticky1)
-        //    {
-        //        sticky1.SaveData(tag, depth + 1);
-        //    }
-        //    tag.Add("item2" + depth, Save(item2));
-        //    if (item2.ModItem is StickyItem sticky2)
-        //    {
-        //        sticky2.SaveData(tag, depth + 1);
-        //    }
-        //}
         public override void SaveData(TagCompound tag)
         {
             //SaveData(tag, 0);
@@ -2824,172 +2939,6 @@ namespace StickyWeapons
             //tag.Add("YEEValue", omgValue);
 
         }
-        //internal static List<TagCompound> SaveGlobals(Item item)
-        //{
-        //    if (item.ModItem is UnloadedItem)
-        //        return null; // UnloadedItems cannot have global data
-
-        //    var list = new List<TagCompound>();
-
-        //    var saveData = new TagCompound();
-
-        //    foreach (var globalItem in (List<GlobalItem>)typeof(ItemLoader).GetField("globalItems", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null))
-        //    {
-        //        var globalItemInstance = globalItem.Instance(item);
-
-        //        globalItemInstance?.SaveData(item, saveData);
-
-        //        if (saveData.Count == 0)
-        //            continue;
-
-        //        list.Add(new TagCompound
-        //        {
-        //            ["mod"] = globalItemInstance.Mod.Name,
-        //            ["name"] = globalItemInstance.Name,
-        //            ["data"] = saveData
-        //        });
-        //        saveData = new TagCompound();
-        //    }
-
-        //    return list.Count > 0 ? list : null;
-        //}
-        //public static TagCompound Save(Item item)
-        //{
-        //    var tag = new TagCompound();
-
-        //    if (item.type <= 0)
-        //        return tag;
-
-        //    if (item.ModItem == null)
-        //    {
-        //        tag.Set("mod", "Terraria");
-        //        tag.Set("id", item.netID);
-        //    }
-        //    else
-        //    {
-        //        tag.Set("mod", item.ModItem.Mod.Name);
-        //        tag.Set("name", item.ModItem.Name);
-
-        //        var saveData = new TagCompound();
-
-        //        if (item.ModItem is not StickyItem)
-        //            item.ModItem.SaveData(saveData);
-
-        //        if (saveData.Count > 0)
-        //        {
-        //            tag.Set("data", saveData);
-        //        }
-        //    }
-
-        //    if (item.prefix != 0 && item.prefix < PrefixID.Count)
-        //        tag.Set("prefix", (byte)item.prefix);
-
-        //    if (item.prefix >= PrefixID.Count)
-        //    {
-        //        ModPrefix modPrefix = PrefixLoader.GetPrefix(item.prefix);
-
-        //        if (modPrefix != null)
-        //        {
-        //            tag.Set("modPrefixMod", modPrefix.Mod.Name);
-        //            tag.Set("modPrefixName", modPrefix.Name);
-        //        }
-        //    }
-
-        //    if (item.stack > 1)
-        //        tag.Set("stack", item.stack);
-
-        //    if (item.favorited)
-        //        tag.Set("fav", true);
-
-        //    tag.Set("globalData", SaveGlobals(item));
-
-        //    return tag;
-        //}
-        //internal static void LoadGlobals(Item item, IList<TagCompound> list)
-        //{
-        //    foreach (var tag in list)
-        //    {
-        //        if (ModContent.TryFind(tag.GetString("mod"), tag.GetString("name"), out GlobalItem globalItemBase) && item.TryGetGlobalItem(globalItemBase, out var globalItem))
-        //        {
-        //            try
-        //            {
-        //                globalItem.LoadData(item, tag.GetCompound("data"));
-        //            }
-        //            catch (Exception e)
-        //            {
-        //                throw new CustomModDataException(globalItem.Mod, $"Error in reading custom player data for {globalItem.FullName}", e);
-        //            }
-        //        }
-        //        else
-        //        {
-        //            //Unloaded GlobalItems and GlobalItems that are no longer valid on an item (e.g. through AppliesToEntity)
-        //            var data = (IList<TagCompound>)typeof(UnloadedGlobalItem).GetField("data", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(item.GetGlobalItem<UnloadedGlobalItem>());
-        //            data.Add(tag);
-        //        }
-        //    }
-        //}
-        //public static void Load(Item item, TagCompound tag)
-        //{
-        //    string modName = tag.GetString("mod");
-        //    if (modName == "")
-        //    {
-        //        item.netDefaults(0);
-        //        return;
-        //    }
-
-        //    if (modName == "Terraria")
-        //    {
-        //        item.netDefaults(tag.GetInt("id"));
-        //    }
-        //    else
-        //    {
-        //        if (ModContent.TryFind(modName, tag.GetString("name"), out ModItem modItem))
-        //        {
-        //            item.SetDefaults(modItem.Type);
-        //            if (item.ModItem is not StickyItem)
-        //                item.ModItem.LoadData(tag.GetCompound("data"));
-        //        }
-        //        else
-        //        {
-        //            item.SetDefaults(ModContent.ItemType<UnloadedItem>());
-        //            var unloadedItem = (UnloadedItem)item.ModItem;
-        //            typeof(UnloadedItem).GetMethod("Setup", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(unloadedItem, new object[] { tag });
-        //            //mi.CreateDelegate<Action<TagCompound>>().Invoke(tag);
-        //            //var mi = 
-        //        }
-        //    }
-
-        //    if (tag.ContainsKey("modPrefixMod") && tag.ContainsKey("modPrefixName"))
-        //    {
-        //        item.Prefix(ModContent.TryFind(tag.GetString("modPrefixMod"), tag.GetString("modPrefixName"), out ModPrefix prefix) ? prefix.Type : 0);
-        //    }
-        //    else if (tag.ContainsKey("prefix"))
-        //    {
-        //        item.Prefix(tag.GetByte("prefix"));
-        //    }
-
-        //    item.stack = tag.Get<int?>("stack") ?? 1;
-        //    item.favorited = tag.GetBool("fav");
-
-        //    if (!(item.ModItem is UnloadedItem))
-        //        LoadGlobals(item, tag.GetList<TagCompound>("globalData"));
-        //}
-        //public void LoadData(TagCompound tag, int depth)
-        //{
-        //    theItems.Item1 = new Item() { type = 1 };
-        //    theItems.Item2 = new Item() { type = 1 };
-        //    Load(item1, tag.Get<TagCompound>("item1" + depth));
-        //    if (item1.ModItem is StickyItem sticky1)
-        //    {
-        //        sticky1.LoadData(tag, depth + 1);
-        //    }
-        //    Load(item2, tag.Get<TagCompound>("item2" + depth));
-        //    if (item2.ModItem is StickyItem sticky2)
-        //    {
-        //        sticky2.LoadData(tag, depth + 1);
-        //    }
-        //}
-        //int omgValue;
         public override void LoadData(TagCompound tag)
         {
             //omgValue = tag.GetInt("YEEValue");
@@ -3006,13 +2955,9 @@ namespace StickyWeapons
         }
         public static ModRarity GetRarity(int type)
         {
-            var rarities = (List<ModRarity>)typeof(RarityLoader).GetField("rarities", BindingFlags.Static | BindingFlags.NonPublic).GetValue(null);
+            var rarities = RarityLoader.rarities;
             return type >= ItemRarityID.Count && type < RarityLoader.RarityCount ? rarities[type - ItemRarityID.Count] : null;
         }
-        //public override void SetStaticDefaults()
-        //{
-        //    DisplayName.SetDefault("黏在一起的武器！");
-        //}
     }
     public class CopyItem : ModItem
     {
@@ -3235,10 +3180,26 @@ namespace StickyWeapons
                     StickyItem sticky = item.ModItem as StickyItem;
                     var items = from target in consumedItems where target.type != ModContent.ItemType<Glue>() select target;
                     var array = items.ToArray();
-                    sticky.theItems.Item1 = array[0].Clone();
-                    sticky.theItems.Item2 = array[1].Clone();
-                    sticky.theItems.Item1.stack = 1;
-                    sticky.theItems.Item2.stack = 1;
+                    var item1 = sticky.theItems.Item1 = array[0].Clone();
+                    var item2 = sticky.theItems.Item2 = array[1].Clone();
+                    item1.stack = 1;
+                    item2.stack = 1;
+                    if (item1.ModItem != null && item1.ModItem is StickyItem _sticky1)
+                    {
+                        Main.RunOnMainThread(() =>
+                        {
+                            _sticky1.complexTexture?.Dispose();
+                            _sticky1.complexTexture = null;
+                        });
+                    }
+                    if (item2.ModItem != null && item2.ModItem is StickyItem _sticky2)
+                    {
+                        Main.RunOnMainThread(() =>
+                        {
+                            _sticky2.complexTexture?.Dispose();
+                            _sticky2.complexTexture = null;
+                        });
+                    }
                     var list = new List<Item>();
                     sticky.GetItemSet(list);
                     sticky.ItemSet = list.ToArray();
