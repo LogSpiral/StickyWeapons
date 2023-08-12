@@ -172,7 +172,7 @@ namespace StickyWeapons
             int type = sItem.type;
             if ((type == 65 || type == 676 || type == 723 || type == 724 || type == 757 || type == 674 || type == 675 || type == 989 || type == 1226 || type == 1227) && !self.ItemAnimationJustStarted)
                 flag = false;
-
+             
             if (type == 5097 && self.ItemAnimationJustStarted)
                 self._batbatCanHeal = true;
 

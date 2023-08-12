@@ -1,11 +1,7 @@
-Mods: 
-{
-	StickyWeapons: 
-	{
-		Items: 
-		{
-			Glue: 
-			{
+Mods: {
+	StickyWeapons: {
+		Items: {
+			Glue: {
 				DisplayName: 胶水
 				Tooltip:
 					'''
@@ -14,27 +10,30 @@ Mods:
 					'''
 			}
 
-			StickyItem.DisplayName: 黏在一起的武器！
+			StickyItem: {
+				DisplayName: 黏在一起的武器！
+				// Tooltip: ""
+			}
 
-			OrganicSolvent: 
-			{
+			OrganicSolvent: {
 				DisplayName: 有机溶剂
 				Tooltip: 溶解掉凝胶并且返还所有东西，这真的合理吗？
 			}
 
-			CopyItem:
-			{
+			CopyItem: {
 				DisplayName: 复制物品
 				Tooltip: 就像它的名字一样，丢出去用来复制物品
 			}
 
-			ReturnStickyBag: 
-			{
+			ReturnStickyBag: {
 				DisplayName: 返还袋
 				Tooltip: 包含以下物品
 			}
 
-			ShowItem.DisplayName: 辅助合成表显示的物品，请不要乱动
+			ShowItem: {
+				DisplayName: 辅助合成表显示的物品，请不要乱动
+				// Tooltip: ""
+			}
 		}
 	}
 }

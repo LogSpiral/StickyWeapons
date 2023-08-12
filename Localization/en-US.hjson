@@ -1,11 +1,7 @@
-Mods: 
-{
-	StickyWeapons: 
-	{
-		Items: 
-		{
-			Glue: 
-			{
+Mods: {
+	StickyWeapons: {
+		Items: {
+			Glue: {
 				DisplayName: Glue
 				Tooltip:
 					'''
@@ -14,27 +10,30 @@ Mods:
 					'''
 			}
 
-			StickyItem.DisplayName: Weapons that stick together!
+			StickyItem: {
+				DisplayName: Weapons that stick together!
+				Tooltip: ""
+			}
 
-			OrganicSolvent: 
-			{
+			OrganicSolvent: {
 				DisplayName: OrganicSolvent
 				Tooltip: Return All of The items that sticked in some glue.OMG is that make a sense?
 			}
 
-			CopyItem:
-			{
+			CopyItem: {
 				DisplayName: Copy Item
 				Tooltip: As the name of it, throw it out to copy an item
 			}
 
-			ReturnStickyBag: 
-			{
+			ReturnStickyBag: {
 				DisplayName: ReturnBag
 				Tooltip: It Contains the following items
 			}
 
-			ShowItem.DisplayName: It Assist the Recipe,Dont use it
+			ShowItem: {
+				DisplayName: It Assist the Recipe,Dont use it
+				Tooltip: ""
+			}
 		}
 	}
 }
