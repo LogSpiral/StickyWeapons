@@ -110,6 +110,7 @@ namespace StickyWeapons
         {
             //IL.Terraria.Player.ApplyItemTime += Player_ApplyItemTime_Sticky;
             //IL.Terraria.Player.ItemCheck_Inner += Player_ItemCheck_InnerSticky;//_ShootLoop
+
             On_Player.ApplyItemTime += Player_ApplyItemTime_Sticky_On;
             //On.Terraria.Player.ItemCheck_GetMeleeHitbox += Player_ItemCheck_GetMeleeHitbox;
             //On_Player.ItemCheck_Inner += Player_ItemCheck_Inner_Sticky_On;
@@ -118,6 +119,7 @@ namespace StickyWeapons
             //On_PlayerDrawLayers.DrawPlayer_27_HeldItem += On_PlayerDrawLayers_DrawPlayer_27_HeldItem;
             IL_PlayerDrawLayers.DrawPlayer_27_HeldItem += IL_PlayerDrawLayers_DrawPlayer_27_HeldItem_Sticky;
             //On.Terraria.Player.ge
+
             base.Load();
         }
         public static string testText;
@@ -2334,6 +2336,8 @@ namespace StickyWeapons
                 knockBack = i.knockBack > knockBack ? i.knockBack : knockBack;
                 value += i.value + 5;
                 channel |= i.channel;
+                if (i.useAmmo != 0)
+                    Item.useAmmo = i.useAmmo;
                 if (i.useStyle == ItemUseStyleID.Swing) useStyle = ItemUseStyleID.Swing;
                 if (Item.DamageType == DamageClass.Default || (MeleeCheck(i.DamageType) && !MeleeCheck(Item.DamageType)))
                 {
@@ -3166,6 +3170,14 @@ namespace StickyWeapons
         {
             if (weaponTypes != null && weaponTypes.Length > 0 && (int)(Main.GlobalTimeWrappedHourly * 2) % 2 == 0)
                 recipeGroup.IconicItemId = Main.rand.Next(weaponTypes);
+        }
+        public override void PostSetupContent()
+        {
+            if (ModLoader.TryGetMod("CoolerItemVisualEffect", out var result))
+            {
+                result.Call("RegisterModifyWeaponTex", (Func<Item, Texture2D>)(item => StickyWeapons.GetWeaponTextureFromItem(null, item)), 1f);
+            }
+            base.PostSetupContent();
         }
         public override void AddRecipes()
         {

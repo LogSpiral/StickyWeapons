@@ -7,6 +7,8 @@
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<LangVersion>latest</LangVersion>
 		<Solaestas-UsePublicizer>True</Solaestas-UsePublicizer>
+		<Solaestas-UseAssetPath>false</Solaestas-UseAssetPath>
+
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Solaestas.tModLoader.ModBuilder" Version="1.3.0" />
