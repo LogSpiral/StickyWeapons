@@ -2,12 +2,10 @@
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Security.Policy;
 using Terraria;
 using Terraria.Audio;
 using Terraria.DataStructures;
@@ -22,7 +20,6 @@ using Terraria.ModLoader.IO;
 using Terraria.ObjectData;
 using Terraria.UI;
 using static Mono.Cecil.Cil.OpCodes;
-using static Terraria.ModLoader.PlayerDrawLayer;
 using static Terraria.Player;
 
 namespace StickyWeapons
@@ -1032,7 +1029,7 @@ namespace StickyWeapons
                     if (self.itemTimeMax != 0 && stickyPlr.moreTimeShoot && item.consumable && !context.SkipItemConsumption)//self.itemTime == self.itemTimeMax
                     {
                         bool flag6 = true;
-                        if (item.ranged)
+                        if (item.CountsAsClass(DamageClass.Ranged))
                         {
                             if (self.huntressAmmoCost90 && Main.rand.NextBool(10))
                                 flag6 = false;
