@@ -2372,7 +2372,7 @@ namespace StickyWeapons
                     gd.SetRenderTarget(complexTexture);
                     gd.Clear(Color.Transparent);
                     sp.Begin();
-                    List<int> types = new List<int>();
+                    List<int> types = [];
                     foreach (var item in ItemSet)
                     {
                         if (types.Contains(item.type)) continue;
@@ -2462,7 +2462,7 @@ namespace StickyWeapons
                 gd.SetRenderTarget(complexTexture);
                 gd.Clear(Color.Transparent);
                 sp.Begin();
-                List<int> types = new List<int>();
+                List<int> types = [];
                 foreach (var item in ItemSet)
                 {
                     if (types.Contains(item.type)) continue;
@@ -3150,10 +3150,10 @@ namespace StickyWeapons
         public RecipeGroup recipeGroup;
         public override void AddRecipeGroups()
         {
-            List<int> types = new List<int>
-            {
+            List<int> types =
+            [
                 ModContent.ItemType<ShowItem>()
-            };
+            ];
             for (int i = 0; i < ItemLoader.ItemCount; i++)
             {
                 Item item = new Item(i);
@@ -3230,7 +3230,7 @@ namespace StickyWeapons
                 (recipe, item, consumedItems, stack) =>
                 {
                     ReturnStickyBag returnStickyBag = item.ModItem as ReturnStickyBag;
-                    List<Item> items = new List<Item>();
+                    List<Item> items = [];
                     var set = (consumedItems[0].ModItem as StickyItem).ItemSet;
                     foreach (var _item in set)
                     {
