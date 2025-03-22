@@ -981,7 +981,7 @@ namespace StickyWeapons
                                 type3 = 219;
                             }
 
-                            Vector2 vector4 = new Vector2(vector3.X, num11 * (1f - num10) - num11 + (float)(self.height / 2));
+                            Vector2 vector4 = new(vector3.X, num11 * (1f - num10) - num11 + (float)(self.height / 2));
                             vector4 += self.Center;
                             int num14 = Dust.NewDust(vector4, 0, 0, type3, 0f, 0f, 100);
                             Main.dust[num14].position = vector4;
@@ -1816,7 +1816,7 @@ namespace StickyWeapons
         private void Player_ApplyItemTime_Sticky(ILContext il)
         {
             return;
-            ILCursor cursor = new ILCursor(il);
+            ILCursor cursor = new(il);
             if (!cursor.TryGotoNext(i => i.MatchRet())) return;
             ILLabel label = cursor.DefineLabel();
             cursor.MarkLabel(label);
@@ -1839,7 +1839,7 @@ namespace StickyWeapons
         {
             //return;
 
-            ILCursor cursor = new ILCursor(il);
+            ILCursor cursor = new(il);
             //cursor.Emit(Ldarg_0);
             //cursor.EmitDelegate<Action<Player>>(player => Main.NewText(player.itemAnimation));
             if (!cursor.TryGotoNext(i => i.MatchStloc(2)))
@@ -2043,7 +2043,7 @@ namespace StickyWeapons
         //public static int value;
         private void Player_ItemCheck_Inner_ShootLoop(ILContext il)
         {
-            ILCursor cursor = new ILCursor(il);
+            ILCursor cursor = new(il);
             //if (!cursor.TryGotoNext(i => i.MatchStloc(2)))
             //{
             //    return;
@@ -2541,7 +2541,7 @@ namespace StickyWeapons
                     #region 原版TooltipLine
 
                     bool settingsEnabled_OpaqueBoxBehindTooltips = Main.SettingsEnabled_OpaqueBoxBehindTooltips;
-                    Color color = new Color(Main.mouseTextColor, Main.mouseTextColor, Main.mouseTextColor, Main.mouseTextColor);
+                    Color color = new(Main.mouseTextColor, Main.mouseTextColor, Main.mouseTextColor, Main.mouseTextColor);
                     int yoyoLogo = -1;
                     int researchLine = -1;
                     var rare = _item.rare;
@@ -3156,7 +3156,7 @@ namespace StickyWeapons
             ];
             for (int i = 0; i < ItemLoader.ItemCount; i++)
             {
-                Item item = new Item(i);
+                Item item = new(i);
                 if (Glue.CanChoose(item)) types.Add(i);
             }
             weaponTypes = types.ToArray();
