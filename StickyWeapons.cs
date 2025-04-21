@@ -2198,7 +2198,7 @@ namespace StickyWeapons
 
                         var list = new List<Item>();
                         sticky.GetItemSet(list);
-                        sticky.ItemSet = list.ToArray();
+                        sticky.ItemSet = [.. list];
                         sticky.SetDefaults();
                         //Item.TurnToAir();
 
@@ -2296,7 +2296,7 @@ namespace StickyWeapons
             ItemIO.Receive(theItems.Item2 ??= new Item(), reader, true, true);
             var list = new List<Item>();
             GetItemSet(list);
-            ItemSet = list.ToArray();
+            ItemSet = [.. list];
             SetDefaults();
             base.NetReceive(reader);
         }
@@ -2951,7 +2951,7 @@ namespace StickyWeapons
             ItemIO.Load(item2, tag.Get<TagCompound>("item2"));
             var list = new List<Item>();
             GetItemSet(list);
-            ItemSet = list.ToArray();
+            ItemSet = [.. list];
             SetDefaults();
         }
         public static ModRarity GetRarity(int type)
@@ -3159,7 +3159,7 @@ namespace StickyWeapons
                 Item item = new(i);
                 if (Glue.CanChoose(item)) types.Add(i);
             }
-            weaponTypes = types.ToArray();
+            weaponTypes = [.. types];
             recipeGroup = new RecipeGroup(() => Language.GetTextValue("LegacyMisc.37") + " 武器Weapons(包里前两个The first two in Inventory)", weaponTypes);
             RecipeGroup.RegisterGroup("SitckyWeapons:Weapons!!", recipeGroup);
         }
@@ -3211,7 +3211,7 @@ namespace StickyWeapons
                     }
                     var list = new List<Item>();
                     sticky.GetItemSet(list);
-                    sticky.ItemSet = list.ToArray();
+                    sticky.ItemSet = [.. list];
                     sticky.SetDefaults();
 
                     //foreach (var i in consumedItems)
@@ -3238,7 +3238,7 @@ namespace StickyWeapons
                     }
                     items.Add(new Item(ItemID.Ale));
                     items.Add(new Item(ItemID.Gel, set.Length * 5));
-                    returnStickyBag.items = items.ToArray();
+                    returnStickyBag.items = [.. items];
                 }
             );
             recipe.Register();
