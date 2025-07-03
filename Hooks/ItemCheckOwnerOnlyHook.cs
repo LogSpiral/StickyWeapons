@@ -11,7 +11,7 @@ using static Terraria.Player;
 namespace StickyWeapons;
 
 partial class StickyWeapons
-{   
+{
     static void IL_Player_ItemCheck_OwnerOnlyCode(ILContext il)
     {
         var cursor = new ILCursor(il);
@@ -50,19 +50,36 @@ partial class StickyWeapons
 
         cursor.EmitDelegate<Action<Player, Item>>((player, item) =>
         {
-            var stickyPlr = player.GetModPlayer<StickyPlayer>();
-            if (!player.channel)
+            if (player.HeldItem.ModItem is not StickyItem)
             {
-                if (stickyPlr.index == 0) // stickyPlr.max - 1
+                if (!player.channel)
+                {
                     player.toolTime = player.itemTime;
+                }
+                else
+                {
+                    player.toolTime--;
+                    if (player.toolTime < 0)
+                        player.toolTime = CombinedHooks.TotalUseTime(item.useTime, player, item);
+                }
             }
             else
             {
-                if (stickyPlr.index == 0)
-                    player.toolTime--;
-                if (player.toolTime < 0)
-                    player.toolTime = CombinedHooks.TotalUseTime(item.useTime, player, item);
+                var stickyPlr = player.GetModPlayer<StickyPlayer>();
+                if (!player.channel)
+                {
+                    if (stickyPlr.index == stickyPlr.max - 1) // 
+                        player.toolTime = player.itemTime;
+                }
+                else
+                {
+                    if (stickyPlr.index == 0)
+                        player.toolTime--;
+                    if (player.toolTime < 0)
+                        player.toolTime = CombinedHooks.TotalUseTime(item.useTime, player, item);
+                }
             }
+
         });
         return;
     }

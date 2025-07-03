@@ -1,6 +1,6 @@
 displayName = Stick Your Weapons(黏住你的武器)
 author = 阿汪 & 错数螺线Log_Spiral
-version = 0.1.0
+version = 0.1.0.1
 hideResources = false
 hideCode = false
 includeSource = true
