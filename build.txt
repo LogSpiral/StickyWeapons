@@ -1,9 +1,9 @@
 displayName = Stick Your Weapons(黏住你的武器)
-author = 阿汪(错数螺线Log_Spiral)
-version = 0.0.7
+author = 阿汪 & 错数螺线Log_Spiral
+version = 0.1.0
 hideResources = false
 hideCode = false
 includeSource = true
 includePDB = true
-homepage = https://space.bilibili.com/259264134
+homepage = https://github.com/LogSpiral/StickyWeapons
 buildIgnore = *.csproj, *.sln, obj\*, bin\*, *.suo, *.user, .git\*, .vs\*, Libraries\*

@@ -16,9 +16,11 @@ Add 1145141919810 BUGs
 制作人员：
 Staff：
 程序：
-[c/9966cc:阿汪(向内延伸的对数螺线)]
+[c/9966cc:阿汪]
+[c/003399:错数螺线]
 Programmer：
-[c/9966cc:阿汪(LogarithmicSpiralThatExtendsInward)]
+[c/9966cc:Wang]
+[c/003399:LogSpiral]
 
 特别感谢：
 SpecialThanks：

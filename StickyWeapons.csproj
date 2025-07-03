@@ -2,11 +2,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<Import Project="..\tModLoader.targets" />
 	<PropertyGroup>
-		<AssemblyName>StickyWeapons</AssemblyName>
-		<LangVersion>latest</LangVersion>
-		<Solaestas-UsePublicizer>True</Solaestas-UsePublicizer>
-		<Solaestas-UseAssetPath>false</Solaestas-UseAssetPath>
-
+		<LangVersion>preview</LangVersion>
 	</PropertyGroup>
 	<ItemGroup>
 		<PackageReference Include="Solaestas.tModLoader.ModBuilder" Version="1.6.1" />
